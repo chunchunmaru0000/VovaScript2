@@ -1,0 +1,9 @@
+C:\Users\user\Documents\kptyata#\PycLan\bin\Debug\PycLan.dll
+C:\Users\user\Documents\kptyata#\PycLan\bin\Debug\PycLan.pdb
+C:\Users\user\Documents\kptyata#\PycLan\obj\Debug\PycLan.csproj.AssemblyReference.cache
+C:\Users\user\Documents\kptyata#\PycLan\obj\Debug\PycLan.csproj.CoreCompileInputs.cache
+C:\Users\user\Documents\kptyata#\PycLan\obj\Debug\PycLan.dll
+C:\Users\user\Documents\kptyata#\PycLan\obj\Debug\PycLan.pdb
+C:\Users\user\Documents\kptyata#\PycLan\bin\Debug\Newtonsoft.Json.dll
+C:\Users\user\Documents\kptyata#\PycLan\bin\Debug\Newtonsoft.Json.xml
+C:\Users\user\Documents\kptyata#\PycLan\obj\Debug\PycLan.csproj.Up2Date
