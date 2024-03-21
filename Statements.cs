@@ -1,14 +1,18 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading;
+using System.Xml.Linq;
 
 namespace VovaScript
 {
-    public sealed class AssignStatement : IStatement
+    public sealed class AssignStatement : IStatement, IExpression
     {
         public Token Variable;
         public IExpression Expression;
+        public object Result;
 
         public AssignStatement(Token variable, IExpression expression) 
         { 
@@ -19,44 +23,69 @@ namespace VovaScript
         public void Execute()
         {
             string name = Variable.View;
-            object result = Expression.Evaluated();
+            object Result = Expression.Evaluated();
 
             if (Objects.ContainsVariable(name))
                 Objects.DeleteVariable(name);
-            if (Objects.ContainsClassObject(name))
-                Objects.DeleteClassObject(name);
 
-            if (result is IClass)
+            if (Result is IClass)
             {
-                IClass classObject = result as IClass;
-                Objects.AddClassObject(Variable.View, classObject);
+                IClass classObject = Result as IClass;
+                Objects.AddVariable(name, classObject);
             }
             else
-                Objects.AddVariable(name, result);
+                Objects.AddVariable(name, new IClass(name, Result));
         }
+
+        public object Evaluated()
+        {
+            Execute();
+            return Result is IClass ? ((IClass)Result).Clone() : Result;
+        }
+
+        public IStatement Clone() => new AssignStatement(Variable.Clone(), Expression.Clon());
+
+        public IExpression Clon() => new AssignStatement(Variable.Clone(), Expression.Clon());
 
         public override string ToString() => $"{Variable} = {Expression};";
     }
 
-    public sealed class PrintStatement : IStatement
+    public sealed class PrintStatement : IStatement, IExpression
     {
         public IExpression Expression;
+        public object Result;
 
-        public PrintStatement(IExpression expression)
-        {
-            Expression = expression;
-        }
+        public PrintStatement(IExpression expression) => Expression = expression;
 
         public void Execute()
         {
             object value = Expression.Evaluated();
             if (value is List<object>)
-                Console.WriteLine(ListString((List<object>)value));
+            {
+                Result = ListString((List<object>)value);
+                Console.WriteLine(Result);
+            }
             else if (value is bool)
-                Console.WriteLine((bool)value ? "Истина" : "Ложь");
+            {
+                Result = (bool)value ? "Истина" : "Ложь";
+                Console.WriteLine(Result);
+            }
             else
+            {
                 Console.WriteLine(value);
+                Result = value;
+            }
         }
+
+        public object Evaluated()
+        {
+            Execute();
+            return Result;
+        }
+
+        public IStatement Clone() => new PrintStatement(Expression.Clon());
+
+        public IExpression Clon() => new PrintStatement(Expression.Clon());
 
         public static string ListString(List<object> list)
         {
@@ -85,7 +114,7 @@ namespace VovaScript
         public override string ToString() => $"НАЧЕРТАТЬ {Expression};";
     }
 
-    public sealed class IfStatement : IStatement
+    public sealed class IfStatement : IStatement, IExpression
     {
         public IExpression Expression;
         public IStatement IfPart;
@@ -97,6 +126,10 @@ namespace VovaScript
             ElsePart = elseStatement;
         }
 
+        public IExpression Clon() => new IfStatement(Expression.Clon(), IfPart.Clone(), ElsePart.Clone());
+
+        public IStatement Clone() => new IfStatement(Expression.Clon(), IfPart.Clone(), ElsePart.Clone());
+
         public void Execute()
         {
             bool result = Convert.ToBoolean(Expression.Evaluated());
@@ -106,10 +139,28 @@ namespace VovaScript
                 ElsePart.Execute();
         }
 
+        public object Evaluated()
+        {
+            bool result = Convert.ToBoolean(Expression.Evaluated());
+            if (result)
+                try
+                {
+                    IfPart.Execute();
+                }
+                catch (ReturnStatement ret) { return ret.GetResult(); }
+            else if (ElsePart != null)
+                try
+                {
+                    ElsePart.Execute();
+                }
+                catch (ReturnStatement ret) { return ret.GetResult(); }
+            throw new Exception($"ЕСЛИ ИСПОЛЬЗОВАТЬ ТАК СТРУКТУРУ <{this}> ТО НАДО ЧТО-ТО ВЕРНУТЬ");
+        }
+
         public override string ToString() => $"ЕСЛИ {Expression} ТОГДА {{{IfPart}}} ИНАЧЕ {{{ElsePart}}}";
     }
 
-    public sealed class BlockStatement : IStatement
+    public sealed class BlockStatement : IStatement, IExpression
     {
         public List<IStatement> Statements;
 
@@ -121,12 +172,30 @@ namespace VovaScript
                 statement.Execute();
         }
 
+        public object Evaluated()
+        {
+            try
+            {
+                foreach (IStatement statement in Statements)
+                    statement.Execute();
+            }
+            catch (ReturnStatement result)
+            {
+                return result.GetResult();
+            }
+            throw new Exception($"ЕСЛИ ИСПОЛЬЗОВАТЬ ТАК СТРУКТУРУ <{this}> ТО НАДО ЧТО-ТО ВЕРНУТЬ");
+        }
+
+        public IStatement Clone() => new BlockStatement() { Statements = Statements.Select(s => s.Clone()).ToList() };
+
+        public IExpression Clon() => new BlockStatement() { Statements = Statements.Select(s => s.Clone()).ToList() };
+
         public void AddStatement(IStatement statement) => Statements.Add(statement);
 
         public override string ToString() => string.Join("|", Statements.Select(s =>'<' + s.ToString() + '>').ToArray());
     }
 
-    public sealed class WhileStatement : IStatement
+    public sealed class WhileStatement : IStatement, IExpression
     {
         IExpression Expression;
         IStatement Statement;
@@ -136,6 +205,10 @@ namespace VovaScript
             Expression = expression;
             Statement = statement;
         }
+
+        public IStatement Clone() => new WhileStatement(Expression.Clon(), Statement.Clone());
+
+        public IExpression Clon() => new WhileStatement(Expression.Clon(), Statement.Clone());
 
         public void Execute()
         {
@@ -151,15 +224,39 @@ namespace VovaScript
                 }
                 catch (ContinueStatement)
                 {
-                    // contonue by itself
+                    // continue by itself
                 }
             }
+        }
+
+        public object Evaluated()
+        {
+            while (Convert.ToBoolean(Expression.Evaluated()))
+            {
+                try
+                {
+                    Statement.Execute();
+                }
+                catch (BreakStatement)
+                {
+                    break;
+                }
+                catch (ContinueStatement)
+                {
+                    // continue by itself
+                }
+                catch (ReturnStatement result)
+                {
+                    return result.GetResult();
+                }
+            }
+            throw new Exception($"ЕСЛИ ИСПОЛЬЗОВАТЬ ТАК СТРУКТУРУ <{this}> ТО НАДО ЧТО-ТО ВЕРНУТЬ");
         }
 
         public override string ToString() => $"{Expression}: {{{Statement}}}";
     }
 
-    public sealed class ForStatement : IStatement
+    public sealed class ForStatement : IStatement, IExpression
     {
         IStatement Definition;
         IExpression Condition;
@@ -173,6 +270,10 @@ namespace VovaScript
             Alter = alter;
             Statement = statement;
         }
+
+        public IStatement Clone() => new ForStatement(Definition.Clone(), Condition.Clon(), Alter.Clone(), Statement.Clone());
+
+        public IExpression Clon() => new ForStatement(Definition.Clone(), Condition.Clon(), Alter.Clone(), Statement.Clone());
 
         public void Execute()
         {
@@ -193,24 +294,60 @@ namespace VovaScript
             }
         }
 
+        public object Evaluated()
+        {
+            for (Definition.Execute(); Convert.ToBoolean(Condition.Evaluated()); Alter.Execute())
+            {
+                try
+                {
+                    Statement.Execute();
+                }
+                catch (BreakStatement)
+                {
+                    break;
+                }
+                catch (ContinueStatement)
+                {
+                    // continue by itself
+                }
+                catch (ReturnStatement result)
+                {
+                    return result.GetResult();
+                }
+            }
+            throw new Exception($"ЕСЛИ ИСПОЛЬЗОВАТЬ ТАК СТРУКТУРУ <{this}> ТО НАДО ЧТО-ТО ВЕРНУТЬ");
+        }
+
         public override string ToString() => $"ДЛЯ {Definition} {Condition} {Alter}: {Statement}";
     }
 
-    public sealed class BreakStatement : Exception, IStatement
+    public sealed class BreakStatement : Exception, IStatement, IExpression
     {
         public void Execute() => throw this;
+
+        public IStatement Clone() => new BreakStatement();
+
+        public IExpression Clon() => new BreakStatement();
+
+        public object Evaluated() => "ВЫЙТИ";
 
         public override string ToString() => "ВЫЙТИ;";
     }
 
-    public sealed class ContinueStatement : Exception, IStatement
+    public sealed class ContinueStatement : Exception, IStatement, IExpression
     {
         public void Execute() => throw this;
+
+        public IStatement Clone() => new ContinueStatement();
+
+        public IExpression Clon() => new ContinueStatement();
+
+        public object Evaluated() => "ПРОДОЛЖИТЬ";
 
         public override string ToString() => "ПРОДОЛЖИТЬ;";
     }
 
-    public sealed class ReturnStatement : Exception, IStatement
+    public sealed class ReturnStatement : Exception, IStatement, IExpression
     {
         public IExpression Expression;
         public object Value;
@@ -223,89 +360,155 @@ namespace VovaScript
             throw this;
         }
 
+        public object Evaluated()
+        {
+            Value = Expression.Evaluated();
+            throw this;
+        }
+
+        public IStatement Clone() => new ReturnStatement(Expression.Clon());
+
+        public IExpression Clon() => new ReturnStatement(Expression.Clon());
+
         public object GetResult() => Value;
 
         public override string ToString() => $"ВЕРНУТЬ {Value};";
     }
 
-    public sealed class DeclareFunctionStatement : IStatement
+    public sealed class DeclareFunctionStatement : IStatement, IExpression
     {
         public Token Name;
         public Token[] Args;
         public IStatement Body;
+        public IClass Pool;
+        public IClass Function;
 
-        public DeclareFunctionStatement(Token name, Token[] args, IStatement body)
+        public DeclareFunctionStatement(Token name, Token[] args, IStatement body, IClass pool = null)
         {
             Name = name;
             Args = args;
             Body = body;
+            Pool = pool;
         }
 
-        public void Execute() => Objects.AddFunction(Name.View, new UserFunction(Args, Body));
+        public IStatement Clone() => new DeclareFunctionStatement(Name.Clone(), Args.Select(a => a.Clone()).ToArray(), Body.Clone(), Pool.Clone());
+
+        public IExpression Clon() => new DeclareFunctionStatement(Name.Clone(), Args.Select(a => a.Clone()).ToArray(), Body.Clone(), Pool.Clone());
+
+        public void Execute()
+        {
+            IClass function = new IClass(Name.View, Objects.NOTHING, new Dictionary<string, IClass>(), new UserFunction(Args, Body));
+            Function = function;
+            if (Pool is null)
+                Objects.AddVariable(Name.View, function);
+            else
+                Pool.AddAttribute(Name.View, function);
+//=> Objects.AddFunction(Name.View, new UserFunction(Args, Body));
+        } 
+
+        public object Evaluated()
+        {
+            Execute();
+            return Function;
+        }
+
+
 
         public override string ToString() => $"{Name} => ({string.Join("|", Args.Select(a => a.View))}) {Body};";
     }
 
-    public sealed class ProcedureStatement : IStatement
+    public sealed class ProcedureStatement : IStatement, IExpression
     {
         public IExpression Function;
 
         public ProcedureStatement(IExpression function) => Function = function;
 
+        public IStatement Clone() => new ProcedureStatement(Function.Clon());
+
+        public IExpression Clon() => new ProcedureStatement(Function.Clon());
+
         public void Execute() => Function.Evaluated();
 
-        public override string ToString() => $"ВЫПОЛНИТЬ ПРЕЦЕДУРУ {Function}";
+        public object Evaluated() => Function.Evaluated();
+
+        public override string ToString() => $"ВЫПОЛНИТЬ ПРЕЦЕДУРУ {Function};";
     }
 
-    public sealed class ClearStatement : IStatement
+    public sealed class ClearStatement : IStatement, IExpression
     {
         public void Execute() => Console.Clear();
 
-        public override string ToString() => "ЧИСТКА КОНСОЛИ";
+        public object Evaluated() => "ЧИСТКА КОНСОЛИ";
+
+        public IStatement Clone() => new ClearStatement();
+
+        public IExpression Clon() => new ClearStatement();
+
+        public override string ToString() => "ЧИСТКА КОНСОЛИ;";
     }
 
-    public sealed class SleepStatement : IStatement
+    public sealed class SleepStatement : IStatement, IExpression
     {
         public IExpression Ms;
 
         public SleepStatement(IExpression ms) => Ms = ms;
 
+        public IStatement Clone() => new SleepStatement(Ms.Clon());
+
+        public IExpression Clon() => new ClearStatement();
+
         public void Execute() => Thread.Sleep(Convert.ToInt32(Ms.Evaluated()));
+
+        public object Evaluated()
+        {
+            int ms = Convert.ToInt32(Ms.Evaluated());
+            Thread.Sleep(ms);
+            return Convert.ToInt64(ms);
+        }
 
         public override string ToString() => $"СОН({Ms})";
     }
 
-    public sealed class ItemAssignStatement : IStatement
+    public sealed class ItemAssignStatement : IStatement, IExpression
     {
-        public Token Variable;
+        public IExpression List;
         public IExpression Index;
         public IExpression Expression;
+        public IClass Pool;
 
-        public ItemAssignStatement(Token variable, IExpression index, IExpression expression)
+        public ItemAssignStatement(IExpression list, IExpression index, IExpression expression, IClass pool = null)
         {
-            Variable = variable;
+            List = list;
             Index = index;
             Expression = expression;
+            Pool = pool;
         }
+
+        public IStatement Clone() => new ItemAssignStatement(List.Clon(), Index.Clon(), Expression.Clon(), Pool is null ? null : Pool.Clone());
+
+        public IExpression Clon() => new ItemAssignStatement(List.Clon(), Index.Clon(), Expression.Clon(), Pool is null ? null : Pool.Clone());
 
         public void Execute()
         {
-            string name = Variable.View;
-            int index = Convert.ToInt32(Index.Evaluated());
-            object value = Expression.Evaluated();
-            List<object> list = (List<object>)Objects.GetVariable(name);
-            list[index] = value;
-            Objects.AddVariable(name, list);
+            ((List<object>)List.Evaluated())[Convert.ToInt32(Index.Evaluated())] = Expression.Evaluated();
+            Console.WriteLine("Я НЕ УВЕРЕН ЧТО ОН ПРИСВАИВАЕТ ТАК КАК РАНЬШЕ ОНО ПРИСВАИВАЛЬСЯ ПО ИМЕНИ ПЕРЕМЕННОЙ А СЕЙЧАС Я ХОТЕЛ ПРОВЕРИТЬ ЕСЛИ ОБЬЕКТ БУДЕТ ССЫЛОЧНЫМ И ПОЫЕЗЕТ И ЕГО ЭЛЕМЕНТ ИЗМЕНИТСЯ");
         }
 
-        public override string ToString() => $"{Variable.View}[{Index.Evaluated()}] = {Expression.Evaluated()};";
+        public object Evaluated()
+        {
+            Execute();
+            return List.Evaluated();
+        }
+
+        public override string ToString() => $"{List}[{Index.Evaluated()}] = {Expression.Evaluated()};";
     }
 
-    public sealed class OperationAssignStatement : IStatement
+    public sealed class OperationAssignStatement : IStatement, IExpression
     {
         public Token Variable;
         public Token Operation;
         public IExpression Expression;
+        public object Result;
 
         public OperationAssignStatement(Token variable, Token operation, IExpression expression)
         {
@@ -313,6 +516,10 @@ namespace VovaScript
             Operation = operation;
             Expression = expression;
         }
+
+        public IStatement Clone() => new OperationAssignStatement(Variable.Clone(), Operation.Clone(), Expression.Clon());
+
+        public IExpression Clon() => new OperationAssignStatement(Variable.Clone(), Operation.Clone(), Expression.Clon());
 
         public void Execute()
         {
@@ -372,17 +579,28 @@ namespace VovaScript
                 default:
                     throw new Exception($"НЕ МОЖЕТ БЫТЬ: <{name}> <{variable}> <{value}> <{Operation.View}>");
             }
-            Objects.AddVariable(name, result);
+            Objects.AddVariable(name, new IClass(name, result, new Dictionary<string, IClass>()));
+            Result = result;
+        }
+
+        public object Evaluated()
+        {
+            Execute();
+            return Result;
         }
 
         public override string ToString() => $"{Variable.View} {Operation.View} {Expression}";
     }
 
-    public sealed class ProgramStatement : IStatement
+    public sealed class ProgramStatement : IStatement, IExpression
     {
         IExpression Program;
 
         public ProgramStatement(IExpression program) => Program = program;
+
+        public IStatement Clone() => new ProgramStatement(Program.Clon());
+
+        public IExpression Clon() => new ProgramStatement(Program.Clon());
 
         public void Execute()
         {
@@ -390,12 +608,37 @@ namespace VovaScript
             VovaScript2.PycOnceLoad(code);
         }
 
+        public object Evaluated()
+        {
+            string code = Convert.ToString(Program.Evaluated());
+            try
+            {
+                VovaScript2.PycOnceLoad(code);
+            }
+            catch (ReturnStatement result)
+            {
+                return result.GetResult();
+            }
+            return code;
+        }
+
         public override string ToString() => "РУСИТЬ " + Program.ToString();
     }
 
-    public sealed class NothingStatement : IStatement { public void Execute() { } public override string ToString() => "НИЧЕГО"; }
+    public sealed class NothingStatement : IStatement, IExpression
+    { 
+        public void Execute() { }
 
-    public sealed class DeclareClassStatement : IStatement
+        public object Evaluated() => Objects.NOTHING.Clone();
+
+        public IStatement Clone() => new NothingStatement();
+
+        public IExpression Clon() => new NothingStatement();
+
+        public override string ToString() => "НИЧЕГО"; 
+    }
+
+    public sealed class DeclareClassStatement : IStatement, IExpression
     {
         public Token ClassName;
         public IStatement Body;
@@ -406,9 +649,13 @@ namespace VovaScript
             Body = body;
         }
 
+        public IStatement Clone() => new DeclareClassStatement(ClassName.Clone(), Body.Clone());
+
+        public IExpression Clon() => new DeclareClassStatement(ClassName.Clone(), Body.Clone());
+
         public void Execute()
         {
-            IClass newClass = new IClass(ClassName.View, new Dictionary<string, object>(), new Dictionary<string, UserFunction>());
+            IClass newClass = new IClass(ClassName.View, Objects.NOTHING, new Dictionary<string, IClass>());
             BlockStatement body = Body as BlockStatement;
             foreach (IStatement statement in body.Statements)
             {
@@ -417,15 +664,15 @@ namespace VovaScript
                     AssignStatement assign = statement as AssignStatement;
                     object result = assign.Expression.Evaluated();
                     if (result is IClass)
-                        newClass.AddClassObject(assign.Variable.View, (IClass)result);
+                        newClass.AddAttribute(assign.Variable.View, (IClass)result);
                     else
-                        newClass.AddAttribute(assign.Variable.View, result);
+                        newClass.AddAttribute(assign.Variable.View, new IClass(assign.Variable.View, result, new Dictionary<string, IClass>()));
                     continue;
                 }
                 if (statement is DeclareFunctionStatement)
                 {
                     DeclareFunctionStatement method = statement as DeclareFunctionStatement;
-                    newClass.AddMethod(method.Name.View, new UserFunction(method.Args, method.Body));
+                    newClass.AddAttribute(method.Name.View, new IClass(method.Name.View, Objects.NOTHING, new Dictionary<string, IClass>(), new UserFunction(method.Args, Body)));
                     continue;
                 }
                 throw new Exception($"НЕДОПУСТИМОЕ ВЫРАЖЕНИЕ ДЛЯ ОБЬЯВЛЕНИЯ В КЛАССЕ: <{TypePrint.Pyc(statement)}> С ТЕЛОМ {statement}");
@@ -433,10 +680,16 @@ namespace VovaScript
             Objects.AddClass(newClass.Name, newClass);
         }
 
+        public object Evaluated()
+        {
+            Execute();
+            return new NewObjectExpression(ClassName, new IStatement[0]);
+        }
+
         public override string ToString() => $"КЛАСС {ClassName.View}{{{Body}}}";
     }
 
-    public sealed class AttributeAssignStatement : IStatement
+    public sealed class AttributeAssignStatement : IStatement, IExpression
     {
         public Token ObjName;
         public Token AttributeName;
@@ -449,12 +702,22 @@ namespace VovaScript
             Value = value;
         }
 
-        public void Execute() => Objects.GetClassObject(ObjName.View).AddAttribute(AttributeName.View, Value.Evaluated());
+        public IStatement Clone() => new AttributeAssignStatement(ObjName.Clone(), AttributeName.Clone(), Value.Clon());
 
+        public IExpression Clon() => new AttributeAssignStatement(ObjName.Clone(), AttributeName.Clone(), Value.Clon());
+
+        public void Execute() => Objects.GetVariable(ObjName.View).AddAttribute(AttributeName.View, new IClass(AttributeName.View, Value.Evaluated()));
+
+        public object Evaluated()
+        {
+            Execute();
+            return Objects.GetVariable(ObjName.View).GetAttribute(AttributeName.View).Evaluated();
+        }
+        
         public override string ToString() => $"{ObjName}.{AttributeName} = {Value};";
     }
 
-    public sealed class MethodAssignStatement : IStatement
+    public sealed class MethodAssignStatement : IStatement, IExpression
     {
         public Token ObjectName;
         public Token MethodName;
@@ -469,7 +732,17 @@ namespace VovaScript
             Body = body;
         }
 
-        public void Execute() => Objects.GetClassObject(ObjectName.View).AddMethod(MethodName.View, new UserFunction(Args, Body));
+        public IStatement Clone() => new MethodAssignStatement(ObjectName.Clone(), MethodName.Clone(), Args.Select(a => a.Clone()).ToArray(), Body.Clone());
+
+        public IExpression Clon() => new MethodAssignStatement(ObjectName.Clone(), MethodName.Clone(), Args.Select(a => a.Clone()).ToArray(), Body.Clone());
+
+        public void Execute() => Objects.GetVariable(ObjectName.View).AddAttribute(MethodName.View, new IClass(MethodName.View, Objects.NOTHING, new Dictionary<string, IClass>(), new UserFunction(Args, Body)));
+
+        public object Evaluated()
+        {
+            Execute();
+            return Objects.GetVariable(ObjectName.View).GetAttribute(MethodName.View).Clone();
+        }
 
         public override string ToString() => $"{ObjectName}.{MethodName} => ({string.Join("|", Args.Select(a => a.View))}) {Body};";
     }

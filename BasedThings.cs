@@ -1,4 +1,4 @@
-﻿using Microsoft.Win32;
+﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -273,55 +273,91 @@ namespace VovaScript
         public object Value { get; set; }
         public TokenType Type { get; set; }
 
-        public override string ToString()
-        {
-            return $"<{View}> <{Convert.ToString(Value)}> <{Type.GetStringValue()}>";
-        }
+        public Token Clone() => new Token() { Value = Value, View = View, Type = Type };
+
+        public override string ToString() => $"<{View}> <{Convert.ToString(Value)}> <{Type.GetStringValue()}>";
     }
 
     public interface IExpression
     {
         object Evaluated();
 
-        string ToString();
+        IExpression Clon();
     }
 
     public interface IStatement
     {
         void Execute();
 
-        string ToString();
+        IStatement Clone();
     }
 
     public interface IFunction
     {
         object Execute(params object[] obj);
+
+        IFunction Cloned();
     }
 
-    public sealed class IClass
+    public class IClass : IExpression, IFunction
     {
         public string Name;
-        public Dictionary<string, object> Attributes = new Dictionary<string, object>();
-        public Dictionary<string, UserFunction> Methods = new Dictionary<string, UserFunction>();
-        public Dictionary<string, IClass> ClassObjects = new Dictionary<string, IClass>();
-        public Stack<Dictionary<string, object>> Registers = new Stack<Dictionary<string, object>>();
-        public Stack<Dictionary<string, UserFunction>> RegistersF = new Stack<Dictionary<string, UserFunction>>();
-        public Stack<Dictionary<string, IClass>> RegistersO = new Stack<Dictionary<string, IClass>>();
+        public object Value;
+        public IFunction Body;
+        public static Dictionary<string, IClass> HOLLOW = new Dictionary<string, IClass>();
+        public Dictionary<string, IClass> Attributes = new Dictionary<string, IClass>();
+        public Stack<Dictionary<string, IClass>> Registers = new Stack<Dictionary<string, IClass>>();
 
-        public IClass(string name, Dictionary<string, object> attributes, Dictionary<string, UserFunction> methods)
+        public IClass(string name, object value, Dictionary<string, IClass> attributes, IFunction body = null)
         {
             Name = name;
+            Value = value;
             Attributes = attributes;
-            Methods = methods;
+            Body = body;
+            AddAttribute("строкой", new IClass("__строкой__", $"<ОБЬЕКТ КЛАССА {Name}>", new Dictionary<string, IClass>()));
+
         }
 
-        public IClass Clone() => new IClass(Name, new Dictionary<string, object>(Attributes), new Dictionary<string, UserFunction>(Methods));
+        public IClass(IClass toClone)
+        {
+            IClass clone = toClone.Clone();
+            Name = clone.Name;
+            Value = clone.Value;
+            Body = clone.Body;
+            Attributes = clone.Attributes;
+        }
 
+        public IClass(string name, object value)
+        {
+            Name = name;
+            Value = value;
+            Body = null;
+            Attributes = new Dictionary<string, IClass>();
+        }
+
+        public IClass(object value)
+        {
+            Name = Convert.ToString(value);
+            Value = value;
+            Body = null;
+            Attributes = new Dictionary<string, IClass>();
+        }
+
+        public object Evaluated() => Value is IClass ? ((IClass)Value).Evaluated() : Value;
+
+        public object Execute(params object[] obj) => Body is null ? Value : Body.Execute(obj);
+
+        public IExpression Clon() => new NumExpression(Value);
+        
+        public IClass Clone() => new IClass(Name, Value is IClass ? ((IClass)Value).Clone() : Value, new Dictionary<string, IClass>(Attributes), Body.Cloned());
+
+        public IFunction Cloned() => Body.Cloned();
+        
         public bool ContainsAttribute(string key) => Attributes.ContainsKey(key);
 
-        public object GetAttribute(string key) => ContainsAttribute(key) ? Attributes[key] : Objects.NOTHING;
+        public IClass GetAttribute(string key) => ContainsAttribute(key) ? Attributes[key] : Objects.NOTHING;
 
-        public void AddAttribute(string key, object value)
+        public void AddAttribute(string key, IClass value)
         {
             if (Attributes.ContainsKey(key))
                 Attributes[key] = value;
@@ -329,111 +365,41 @@ namespace VovaScript
                 Attributes.Add(key, value);
         }
 
-        public void Push()
-        {
-            Registers.Push(new Dictionary<string, object>(Attributes));
-            RegistersF.Push(new Dictionary<string, UserFunction>(Methods));
-            RegistersO.Push(new Dictionary<string, IClass>(ClassObjects));
-        }
+        public void Push() => Registers.Push(new Dictionary<string, IClass>(Attributes));
 
-        public void Pop()
-        {
-            Attributes = Registers.Pop();
-            Methods = RegistersF.Pop();
-            ClassObjects = RegistersO.Pop();
-        }
-        //metods
-        public bool ContainsMethod(string key) => Methods.ContainsKey(key);
+        public void Pop() => Attributes = Registers.Pop();
 
-        public UserFunction GetMethod(string key) => ContainsMethod(key) ? Methods[key] : throw new Exception($"НЕТУ ТАКОГО МЕТОДА В КЛАССЕ ДАННОГО ОБЬЕКТА: <{Name}>");
-
-        public void AddMethod(string key, UserFunction value)
-        {
-            if (Methods.ContainsKey(key))
-                Methods[key] = value;
-            else
-                Methods.Add(key, value);
-        }
-        //objs
-        public bool ContainsClassObject(string key) => ClassObjects.ContainsKey(key);
-
-        public IClass GetClassObject(string key) => ContainsClassObject(key) ? ClassObjects[key] : ClassObjects["ФЕДКИН"];
-
-        public void AddClassObject(string key, IClass value)
-        {
-            if (ClassObjects.ContainsKey(key))
-                ClassObjects[key] = value;
-            else
-                ClassObjects.Add(key, value);
-        }
-
-        public override string ToString() => $"<ОБЬЕКТ КЛАССА {Name}>";
+        public override string ToString() => Convert.ToString(GetAttribute("строкой").Evaluated());
     }
 
     public static class Objects
     {
-        /*        VARIABLES          */
+        /*        VARIABLES          
 
-        public static object NOTHING = (long)0; // need improving i believe
-        public static Stack<Dictionary<string, object>> Registers = new Stack<Dictionary<string, object>>();
-        public static Stack<Dictionary<string, IFunction>> RegistersF = new Stack<Dictionary<string, IFunction>>();
-        public static Stack<Dictionary<string, IClass>> RegistersO = new Stack<Dictionary<string, IClass>>();
-        public static Dictionary<string, object> Variables = new Dictionary<string, object>()
-        {
+        public static IClass DO_NOTHING;
+        public static IClass Sinus = new Sinus();
+        public static IClass Cosinus = new Cosinus();
+        public static IClass Ceiling = new Ceiling();
+        public static IClass Floor = new Floor();
+        public static IClass Tan = new Tan();
+        public static IClass Max = new Max();
+        public static IClass Min = new Min();
+        public static IClass Square = new Square();
+        public static IClass ReadAll = new ReadAllFileFunction();
+        public static IClass Split = new SplitFunction();
+        public static IClass Input = new InputFunction();
+        public static IClass Stringing = new StringingFunction();
+        public static IClass Inting = new IntingFunction();
+        public static IClass Doubling = new DoublingFunction();
+        public static IClass Writing = new WritingFileFunction();
+*/
+        public static IClass NOTHING = new IClass("НИЧЕГО", (long)0, new Dictionary<string, IClass>()); // need improving i believe
+        public static Stack<Dictionary<string, IClass>> Registers = new Stack<Dictionary<string, IClass>>();
+        public static Dictionary<string, IClass> Variables = new Dictionary<string, IClass>()
+        {/*
             { "ПИ", Math.PI },
             { "Е", Math.E },
             { "ИСПБД", "негр" }
-        };
-
-        public static bool ContainsVariable(string key) => Variables.ContainsKey(key);
-
-        public static object GetVariable(string key) => ContainsVariable(key) ? Variables[key] : NOTHING;
-
-        public static void AddVariable(string key, object value)
-        {
-            if (Variables.ContainsKey(key))
-                Variables[key] = value;
-            else
-                Variables.Add(key, value);
-        }
-
-        public static void DeleteVariable(string key) => Variables.Remove(key);
-
-        public static void Push()
-        {
-            Registers.Push(new Dictionary<string, object>(Variables));
-            RegistersF.Push(new Dictionary<string, IFunction>(Functions));
-            RegistersO.Push(new Dictionary<string, IClass>(ClassObjects));
-        }
-
-        public static void Pop()
-        {
-            Variables = Registers.Pop();
-            Functions = RegistersF.Pop();
-            ClassObjects = RegistersO.Pop();
-        }
-
-        /*        FUNCTIONS          */
-
-        public static IFunction DO_NOTHING;
-        public static IFunction Sinus = new Sinus();
-        public static IFunction Cosinus = new Cosinus();
-        public static IFunction Ceiling = new Ceiling();
-        public static IFunction Floor = new Floor();
-        public static IFunction Tan = new Tan();
-        public static IFunction Max = new Max();
-        public static IFunction Min = new Min();
-        public static IFunction Square = new Square();
-        public static IFunction ReadAll = new ReadAllFileFunction();
-        public static IFunction Split = new SplitFunction();
-        public static IFunction Input = new InputFunction();
-        public static IFunction Stringing = new StringingFunction();
-        public static IFunction Inting = new IntingFunction();
-        public static IFunction Doubling = new DoublingFunction();
-        public static IFunction Writing = new WritingFileFunction();
-
-        public static Dictionary<string, IFunction> Functions = new Dictionary<string, IFunction>()
-        {
             { "синус", Sinus },
             { "косинус", Cosinus },
             { "потолок", Ceiling },
@@ -458,24 +424,36 @@ namespace VovaScript
             { "числить",  Inting },
             { "точить",  Doubling },
             { "писать",  Writing },
-            { "летописить",  Writing },
+            { "летописить",  Writing },*/
         };
 
-        public static bool ContainsFunction(string key) => Functions.ContainsKey(key);
+        public static bool ContainsVariable(string key) => Variables.ContainsKey(key);
 
-        public static IFunction GetFunction(string key) => ContainsFunction(key) ? Functions[key] : DO_NOTHING;
+        public static IClass GetVariable(string key) => ContainsVariable(key) ? Variables[key] : NOTHING;
 
-        public static void AddFunction(string key, IFunction value)
+        public static void AddVariable(string key, IClass value)
         {
-            if (Functions.ContainsKey(key))
-                Functions[key] = value;
+            if (Variables.ContainsKey(key))
+                Variables[key] = value;
             else
-                Functions.Add(key, value);
+                Variables.Add(key, value);
+        }
+
+        public static void DeleteVariable(string key) => Variables.Remove(key);
+
+        public static void Push()
+        {
+            Registers.Push(new Dictionary<string, IClass>(Variables));
+        }
+
+        public static void Pop()
+        {
+            Variables = Registers.Pop();
         }
 
         /*           CLASSES         */
 
-        public static IClass Fedkin = new IClass("Федкин", new Dictionary<string, object>(), new Dictionary<string, UserFunction>());
+        public static IClass Fedkin = new IClass("Федкин", (long)0, new Dictionary<string, IClass>());
 
         public static Dictionary<string, IClass> Classes = new Dictionary<string, IClass>()
         {
@@ -493,26 +471,5 @@ namespace VovaScript
             else
                 Classes.Add(key, value);
         }
-
-        /*        CLASS OBJECTS      */
-
-        public static Dictionary<string, IClass> ClassObjects = new Dictionary<string, IClass>() 
-        {
-            { "ФЕДКИН", Fedkin }
-        };
-
-        public static bool ContainsClassObject(string key) => ClassObjects.ContainsKey(key);
-
-        public static IClass GetClassObject(string key) => ContainsClassObject(key) ? ClassObjects[key] : ClassObjects["ФЕДКИН"];
-
-        public static void AddClassObject(string key, IClass value)
-        {
-            if (ClassObjects.ContainsKey(key))
-                ClassObjects[key] = value;
-            else
-                ClassObjects.Add(key, value);
-        }
-
-        public static void DeleteClassObject(string key) => ClassObjects.Remove(key);
     }
 }

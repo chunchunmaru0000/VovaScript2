@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
 
@@ -17,17 +16,9 @@ namespace VovaScript
             Body = body;
         }
 
-        public int ArgsCount()
-        {
-            return Args.Length;
-        }
+        public int ArgsCount() => Args.Length;
 
-        public string GetArgName(int i)
-        {
-            if (i < 0 || i >= ArgsCount())
-                return "";
-            return Args[i].View;
-        }
+        public string GetArgName(int i) => i < 0 || i >= ArgsCount() ? "" : Args[i].View;
 
         public object Execute(params object[] args)
         {
@@ -42,10 +33,15 @@ namespace VovaScript
             return Objects.NOTHING;
         }
 
-        public override string ToString()
+        public IFunction Cloned()
         {
-            return $"({string.Join(", ", Args.Select(a => a.View))}){{{Body}}}";
+            Token[] args = new Token[ArgsCount()];
+            Array.Copy(Args, args, ArgsCount());
+            IFunction clone = new UserFunction(args, Body.Clone());
+            return clone;
         }
+
+        public override string ToString() => $"({string.Join(", ", Args.Select(a => a.View))}){{{Body}}}";
     }
 
     public sealed class MethodExpression : IExpression
@@ -53,48 +49,47 @@ namespace VovaScript
         public Token ObjectName;
         public Token MethodName;
         public IExpression Borrow;
+        public IClass Pool;
 
-        public MethodExpression(Token objectName, Token methodName, IExpression borrow)
+        public MethodExpression(Token objectName, Token methodName, IExpression borrow, IClass pool = null)
         {
             ObjectName = objectName;
             MethodName = methodName;
             Borrow = borrow;
+            Pool = pool;
         }
+
+        public IExpression Clon() => new MethodExpression(ObjectName.Clone(), MethodName.Clone(), Borrow.Clon());
 
         public object Evaluated()
         {
-            IClass classObject = Objects.GetClassObject(ObjectName.View);
-            UserFunction method = classObject.GetMethod(MethodName.View);
+            IClass classObject;
+            if (Pool is null)
+                classObject = Objects.GetClass(ObjectName.View);
+            else
+                classObject = Pool.GetAttribute(ObjectName.View);
+            UserFunction method = classObject.GetAttribute(MethodName.View).Body as UserFunction;
             FunctionExpression borrow = Borrow as FunctionExpression;
+
             object[] args = borrow.Args.Select(a => a.Evaluated()).ToArray();
             if (args.Length < method.ArgsCount())
                 throw new Exception($"НЕВЕРНОЕ КОЛИЧЕСТВО АРГУМЕНТОВ: БЫЛО<{args.Length}> ОЖИДАЛОСЬ<{method.ArgsCount()}>");
             Objects.Push();
-            //object things
+            //attrs
             foreach (var attribute in classObject.Attributes)
                 Objects.AddVariable(attribute.Key, attribute.Value);
-            foreach (var methode in classObject.Methods)
-                Objects.AddFunction(methode.Key, methode.Value);
-            foreach (var obj in classObject.ClassObjects)
-                Objects.AddClassObject(obj.Key, obj.Value);
             //attrs
             for (int i = 0; i < method.ArgsCount(); i++)
-                Objects.AddVariable(method.GetArgName(i), args[i]);
+            {
+                string arg = method.GetArgName(i);
+                Objects.AddVariable(arg, new IClass(arg, args[i]));
+            }
             //execute
             object result = method.Execute();
             //restore or update
             foreach (var variable in Objects.Variables)
                 if (classObject.ContainsAttribute(variable.Key))
                     classObject.AddAttribute(variable.Key, variable.Value);
-            foreach (var obj in Objects.ClassObjects)
-                if (classObject.ContainsClassObject(obj.Key))
-                    classObject.AddClassObject(obj.Key, obj.Value);
-            try
-            {
-                foreach (var function in Objects.Functions)
-                    if (classObject.ContainsMethod(function.Key))
-                        classObject.AddMethod(function.Key, (UserFunction)function.Value);
-            } catch { }
 
             Objects.Pop();
             return result;
@@ -105,17 +100,12 @@ namespace VovaScript
 
     public sealed class Sinus : IFunction
     {
-        public object Execute(object[] x)
-        {
-            if (x.Length == 0)
-                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ, БЫЛО: <{x.Length}>");
-            return Math.Sin(Convert.ToDouble(x[0]));
-        }
+        public object Execute(object[] x) => x.Length == 0 ? throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ, БЫЛО: <{x.Length}>") 
+                                                           : Math.Sin(Convert.ToDouble(x[0]));
 
-        public override string ToString() 
-        {
-            return $"СИНУС(<>)";
-        }
+        public IFunction Cloned() => new Sinus();
+
+        public override string ToString() => $"СИНУС(<>)";
     }
 
     public sealed class Cosinus : IFunction
@@ -127,10 +117,9 @@ namespace VovaScript
             return Math.Cos(Convert.ToDouble(x[0]));
         }
 
-        public override string ToString()
-        {
-            return $"КОСИНУС(<>)";
-        }
+        public IFunction Cloned() => new Cosinus();
+
+        public override string ToString() => $"КОСИНУС(<>)";
     }
 
     public sealed class Ceiling : IFunction
@@ -142,10 +131,9 @@ namespace VovaScript
             return Math.Ceiling(Convert.ToDouble(x[0]));
         }
 
-        public override string ToString()
-        {
-            return $"ПОТОЛОК(<>)";
-        }
+        public IFunction Cloned() => new Ceiling();
+
+        public override string ToString() => $"ПОТОЛОК(<>)";
     }
 
     public sealed class Floor : IFunction
@@ -157,10 +145,9 @@ namespace VovaScript
             return Math.Floor(Convert.ToDouble(x[0]));
         }
 
-        public override string ToString()
-        {
-            return $"ЗАЗЕМЬ(<>)";
-        }
+        public IFunction Cloned() => new Floor();
+
+        public override string ToString() => $"ЗАЗЕМЬ(<>)";
     }
 
     public sealed class Tan : IFunction
@@ -172,10 +159,9 @@ namespace VovaScript
             return Math.Tan(Convert.ToDouble(x[0]));
         }
 
-        public override string ToString()
-        {
-            return $"ТАНГЕНС(<>)";
-        }
+        public IFunction Cloned() => new Tan();
+
+        public override string ToString() => $"ТАНГЕНС(<>)";
     }
 
     public sealed class Max : IFunction
@@ -188,7 +174,9 @@ namespace VovaScript
             //throw new Exception($"С ДАННЫМИ ТИПАМИ ПЕРЕМЕННЫХ ДАННАЯ ФЕНКЦИЯ НЕВОЗМОЖНА: <{this}> <>");
         }
 
-        private object MoreMax(object[] x)
+        public IFunction Cloned() => new Max();
+
+        public static object MoreMax(object[] x)
         {
             int I = 0;
             double max = Convert.ToDouble(x[I]);
@@ -218,10 +206,7 @@ namespace VovaScript
             throw new Exception($"ЭТОГО ПРОСТО НЕ МОЖЕТ БЫТЬ: <{x[I]}> <{TypePrint.Pyc(x[I])}>");
         }
 
-        public override string ToString()
-        {
-            return $"НАИБОЛЬШЕЕ(<>)";
-        }
+        public override string ToString() => $"НАИБОЛЬШЕЕ(<>)";
     }
 
     public sealed class Min : IFunction
@@ -233,6 +218,8 @@ namespace VovaScript
             return LessMax(x);
             //throw new Exception($"С ДАННЫМИ ТИПАМИ ПЕРЕМЕННЫХ ДАННАЯ ФЕНКЦИЯ НЕВОЗМОЖНА: <{this}> <>");
         }
+
+        public IFunction Cloned() => new Min();
 
         private object LessMax(object[] x)
         {
@@ -262,10 +249,7 @@ namespace VovaScript
             throw new Exception($"ЭТОГО ПРОСТО НЕ МОЖЕТ БЫТЬ: <{x[I]}> <{TypePrint.Pyc(x[I])}>");
         }
 
-        public override string ToString()
-        {
-            return $"НАИМЕНЬШЕЕ(<>)";
-        }
+        public override string ToString() => $"НАИМЕНЬШЕЕ(<>)";
     }
 
     public sealed class Square : IFunction
@@ -277,10 +261,9 @@ namespace VovaScript
             return Math.Sqrt(Convert.ToDouble(x[0]));
         }
 
-        public override string ToString()
-        {
-            return $"КОРЕНЬ(<>)";
-        }
+        public IFunction Cloned() => new Square();
+
+        public override string ToString() => $"КОРЕНЬ(<>)";
     }
 
     public sealed class ReadAllFileFunction : IFunction
@@ -292,7 +275,6 @@ namespace VovaScript
             string file = Convert.ToString(x[0]);
 
             if (x.Length >= 2 && Convert.ToString(x[1]) == "линии")
-            {
                 try
                 {
                     return File.ReadAllLines(file, System.Text.Encoding.UTF8).Select(s => (object)s).ToList();
@@ -302,9 +284,7 @@ namespace VovaScript
                     throw new Exception("НЕ ПОЛУЧИЛОСЬ ПРОЧИТАТЬ ФАЙЛ В: " + file);
 
                 }
-            }
             else
-            {
                 try
                 {
                     return File.ReadAllText(file, System.Text.Encoding.UTF8);
@@ -313,13 +293,11 @@ namespace VovaScript
                 {
                     throw new Exception("НЕ ПОЛУЧИЛОСЬ ПРОЧИТАТЬ ФАЙЛ В: " + file);
                 }
-            }
         }
 
-        public override string ToString()
-        {
-            return $"ВЫЧИТАТЬ(<>)";
-        }
+        public IFunction Cloned() => new ReadAllFileFunction();
+
+        public override string ToString() => $"ВЫЧИТАТЬ(<>)";
     }
 
     public sealed class SplitFunction : IFunction
@@ -330,7 +308,7 @@ namespace VovaScript
                 throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ, БЫЛО: <{x.Length}>");
             string stroka = Convert.ToString(x[0]);
 
-            if (x.Length == 1) 
+            if (stroka.Length == 1) 
                 return stroka.Split('\n').Select(s => (object)s).ToList();
             else
             {
@@ -340,10 +318,9 @@ namespace VovaScript
             }
         }
 
-        public override string ToString()
-        {
-            return $"РАЗДЕЛ(<>)";
-        }
+        public IFunction Cloned() => new SplitFunction();
+
+        public override string ToString() => $"РАЗДЕЛ(<>)";
     }
 
     public sealed class InputFunction : IFunction
@@ -358,16 +335,17 @@ namespace VovaScript
             return Console.ReadLine();
         }
 
-        public override string ToString()
-        {
-            return $"ВВОД(<>)";
-        }
+        public IFunction Cloned() => new InputFunction();
+
+        public override string ToString() => $"ВВОД(<>)";
     }
 
     public sealed class StringingFunction : IFunction
     {
         public object Execute(object[] x)
         {
+            if (x[0] is string)
+                return x[0];
             switch (x.Length)
             {
                 case 0:
@@ -379,16 +357,17 @@ namespace VovaScript
             }
         }
 
-        public override string ToString()
-        {
-            return "СТРОЧИТЬ(<>)";
-        }
+        public IFunction Cloned() => new StringingFunction();
+
+        public override string ToString() => "СТРОЧИТЬ(<>)";
     }
 
     public sealed class IntingFunction : IFunction
     {
         public object Execute(object[] x)
         {
+            if (x[0] is long)
+                return x[0];
             try
             {
                 switch (x.Length)
@@ -398,22 +377,23 @@ namespace VovaScript
                     case 1:
                         return Convert.ToInt64(x[0]);
                     default:
-                        return x.Select(s => (object)Convert.ToInt64(s)).ToList();
+                        return x.Select(s => s is string ? (object)Int64.Parse((string)s) : (object)Convert.ToInt64(s)).ToList();
                 }
             }
-            catch (Exception) { throw new Exception("КОНВЕРТАЦИЯ НЕ УДАЛАСЬ"); }
+            catch (Exception) { throw new Exception($"КОНВЕРТАЦИЯ НЕ УДАЛАСЬ: <{x[0]}>"); }
         }
 
-        public override string ToString()
-        {
-            return "ЧИСЛИТЬ(<>)";
-        }
+        public IFunction Cloned() => new IntingFunction();
+
+        public override string ToString() => "ЧИСЛИТЬ(<>)";
     }
 
     public sealed class DoublingFunction : IFunction
     {
         public object Execute(object[] x)
         {
+            if (x[0] is double)
+                return x[0];
             try
             {
                 switch (x.Length)
@@ -423,16 +403,15 @@ namespace VovaScript
                     case 1:
                         return Convert.ToDouble(x[0]);
                     default:
-                        return x.Select(s => (object)Convert.ToDouble(s)).ToList();
+                        return x.Select(s => s is string ? (object)double.Parse((string)s) : (object)Convert.ToDouble(s)).ToList();
                 }
             }
-            catch (Exception) { throw new Exception("КОНВЕРТАЦИЯ НЕ УДАЛАСЬ"); }
+            catch (Exception) { throw new Exception($"КОНВЕРТАЦИЯ НЕ УДАЛАСЬ: <{x[0]}>"); }
         }
 
-        public override string ToString()
-        {
-            return "ТОЧИТЬ(<>)";
-        }
+        public IFunction Cloned() => new DoublingFunction();
+
+        public override string ToString() => "ТОЧИТЬ(<>)";
     }
 
     public sealed class WritingFileFunction : IFunction
@@ -472,9 +451,8 @@ namespace VovaScript
             return x;
         }
 
-        public override string ToString()
-        {
-            return "ЛЕТОПИСИТЬ(<>)";
-        }
+        public IFunction Cloned() => new WritingFileFunction();
+
+        public override string ToString() => "ЛЕТОПИСИТЬ(<>)";
     }
 }

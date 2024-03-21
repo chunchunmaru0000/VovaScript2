@@ -2,13 +2,12 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.AccessControl;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace VovaScript
 {
-    public sealed class SQLCreateDatabaseStatement : IStatement
+    public sealed class SQLCreateDatabaseStatement : IStatement, IExpression
     {
         public IExpression Database;
 
@@ -16,6 +15,10 @@ namespace VovaScript
         {
             Database = database;
         }
+
+        public IStatement Clone() => new SQLCreateDatabaseStatement(Database.Clon());
+
+        public IExpression Clon() => new SQLCreateDatabaseStatement(Database.Clon());
 
         public void Execute() 
         {
@@ -25,14 +28,21 @@ namespace VovaScript
             File.WriteAllText($"{name}.pycdb", json, System.Text.Encoding.UTF8);
         }
 
+        public object Evaluated()
+        {
+            Execute();
+            return Database.Evaluated();
+        }
+
         public override string ToString() => $"СОЗДАТЬ БАЗУ ДАННЫХ <{Database}>";
     }
 
-    public sealed class SQLCreateTableStatement : IStatement
+    public sealed class SQLCreateTableStatement : IStatement, IExpression
     {
         public IExpression TableName;
         public Token[] Types;
         public Token[] Names;
+        public object Result;
 
         public SQLCreateTableStatement(IExpression tableName, Token[] types, Token[] names)
         {
@@ -40,6 +50,10 @@ namespace VovaScript
             Types = types;
             Names = names;
         }
+
+        public IStatement Clone() => new SQLCreateTableStatement(TableName.Clon(), Types.Select(t => t.Clone()).ToArray(), Names.Select(n => n.Clone()).ToArray());
+
+        public IExpression Clon() => new SQLCreateTableStatement(TableName.Clon(), Types.Select(t => t.Clone()).ToArray(), Names.Select(n => n.Clone()).ToArray());
 
         public void Execute()
         {
@@ -71,22 +85,31 @@ namespace VovaScript
                 tableJobj.Add("значения", new JArray());
 
                 File.WriteAllText(database, JsonConvert.SerializeObject(jObj), System.Text.Encoding.UTF8);
+                Result = jObj.ToString();
             } catch (ArgumentException) {
                 Console.ForegroundColor = ConsoleColor.Red;
+                Result = $"ТАБЛИЦА С ИМЕНЕНМ <{tableName}> УЖЕ СУЩЕСТВУЕТ";
                 Console.WriteLine($"ТАБЛИЦА С ИМЕНЕНМ <{tableName}> УЖЕ СУЩЕСТВУЕТ");
                 Console.ResetColor();
               //  throw new Exception($"ТАБЛИЦА С ИМЕНЕНМ <{tableName}> УЖЕ СУЩЕСТВУЕТ"); 
             }
         }
 
+        public object Evaluated()
+        {
+            Execute();
+            return Result;
+        }
+
         public override string ToString() => $" СОЗДАТЬ ТАБЛИЦУ {TableName} {{ТИПЫ: {string.Join(", ", Types.Select(t => t.ToString()))};\n НАЗВАНИЯ: {string.Join(", ", Names.Select(n => n.ToString()))};}}";
     }
 
-    public sealed class SQLInsertStatement : IStatement
+    public sealed class SQLInsertStatement : IStatement, IExpression
     {
         public IExpression TableName;
         public IExpression[] Colons;
         public IExpression[] Values;
+        public object Result;
 
         public SQLInsertStatement(IExpression tableName, IExpression[] colons, IExpression[] values)
         {
@@ -94,6 +117,10 @@ namespace VovaScript
             Colons = colons;
             Values = values;
         }
+
+        public IStatement Clone() => new SQLInsertStatement(TableName.Clon(), Colons.Select(c => c.Clon()).ToArray(), Values.Select(v => v.Clon()).ToArray());
+
+        public IExpression Clon() => new SQLInsertStatement(TableName.Clon(), Colons.Select(c => c.Clon()).ToArray(), Values.Select(v => v.Clon()).ToArray());
 
         public void Execute()
         {
@@ -138,7 +165,19 @@ namespace VovaScript
 
                 valuesJobj.Add(toBeAdded);
                 File.WriteAllText(database, JsonConvert.SerializeObject(jObj), System.Text.Encoding.UTF8);
-            } catch (Exception e)  { Console.ForegroundColor = ConsoleColor.Red; Console.WriteLine(e); Console.ResetColor(); }
+                Result = jObj.ToString();
+            } catch (Exception e)  {
+                Result = "СДЕЛАЙ НОРМАЛЬНУЮ ОБРАБОТКУ ОШИБОК В ИНСЕРТ СКЛ";
+                Console.ForegroundColor = ConsoleColor.Red; 
+                Console.WriteLine(e); 
+                Console.ResetColor(); 
+            }
+        }
+
+        public object Evaluated()
+        {
+            Execute();
+            return Result;
         }
 
         public override string ToString() => $"ДОБАВИТЬ В {TableName} КОЛОНКИ ({string.Join(", ", Colons.Select(c => c.ToString()))})\nЗНАЧЕНИЯ({string.Join(", ", Values.Select(v => v.ToString()))})";
@@ -157,12 +196,14 @@ namespace VovaScript
             position = 0;
         }
 
+        public IExpression Clon() => new SQLConditionExpression(Condition.Select(c => c.Clone()).ToArray(), Data);
+
         public object Parser()
         {
             Console.WriteLine(position);
             Console.WriteLine(PrintStatement.ListString(Data));
             Console.WriteLine(PrintStatement.ListString(Condition.Select(c => (object)c).ToList()));
-            throw new Exception("ТЫ ДАУН НЕ СДЕЛАЛ ЕЩЕ ЭТО(УСЛОВИЯ В СКЛ)");
+            throw new Exception("ТЫ ДАУН НЕ СДЕЛАЛ ЕЩЕ ЭТО УСЛОВИЯ В СКЛ");
         }
 
         public object Evaluated() => throw new Exception("ЧЕЛ");
@@ -191,6 +232,14 @@ namespace VovaScript
             Froms = froms;
             Condition = condition;
         }
+
+        public IExpression Clon() => new SQLSelectExpression(
+            Selections.Select(s => s.Clon()).ToList(),
+            Ats.Select(s => s.Clon()).ToList(),
+            Aliases.Select(s => s.Clon()).ToList(),
+            Froms.Select(s => s.Clon()).ToList(),
+            Condition.Select(c => c.Clone()).ToArray()
+            );
 
         public object Evaluated()
         {

@@ -9,9 +9,7 @@ namespace VovaScript
     {
         public static bool Tokens = false;
         public static bool PrintVariablesInDebug = false;//
-        public static bool PrintFunctionsInDebug = false;
         public static bool PrintVariablesAfterDebug = false;//
-        public static bool PrintFunctionsAfterDebug = false;
         public static bool PrintProgram = false;//
         public static bool Debug = false;//
         public static bool TimePrint = true;
@@ -26,22 +24,17 @@ namespace VovaScript
             Console.ForegroundColor = ConsoleColor.Yellow;
         }
 
-        public static void PrintVariables(bool printVariablesInDebug = false, bool printFunctionsInDebug = false)
+        public static void PrintVariables(bool printVariablesInDebug = false)
         {
             Console.ForegroundColor = ConsoleColor.DarkCyan;
             if (printVariablesInDebug)
                 foreach (var variable in Objects.Variables)
                 {
                     if (variable.Value.GetType().ToString() == "System.Collections.Generic.List`1[System.Object]")
-                        Console.WriteLine($"{variable.Key} = {PrintStatement.ListString((List<object>)variable.Value)}; тип <<{TypePrint.Pyc(variable.Value)}>>; ");
-                    else
+                      //  Console.WriteLine($"{variable.Key} = {PrintStatement.ListString((List<object>)variable.Value)}; тип <<{TypePrint.Pyc(variable.Value)}>>; ");
+                   // else
                         Console.WriteLine($"{variable.Key} = {variable.Value}; тип <<{TypePrint.Pyc(variable.Value)}>>; ");
                 }
-
-            Console.ForegroundColor = ConsoleColor.DarkMagenta;
-            if (printFunctionsInDebug)
-                foreach (var function in Objects.Functions)
-                    Console.WriteLine($"{function.Key} = {function.Value}; тип <<{TypePrint.Pyc(function.Value)}>>; ");
             Console.ResetColor();
         }
 
@@ -65,7 +58,7 @@ namespace VovaScript
                     Console.WriteLine(stopwatch.Elapsed);
             } catch (Exception error) { Console.ForegroundColor = ConsoleColor.Red; Console.WriteLine(error.Message); Console.ResetColor(); }
 
-            PrintVariables(PrintVariablesAfterDebug, PrintFunctionsAfterDebug);
+            PrintVariables(PrintVariablesAfterDebug);
         }
 
         public static void Pyc()
@@ -88,14 +81,6 @@ namespace VovaScript
                     case "Ё ПЕРЕМЕННЫЕ Ё":
                         PrintVariablesInDebug = !PrintVariablesInDebug;
                         Console.WriteLine(PrintVariablesInDebug ? "Истина" : "Ложь");
-                        break;
-                    case "Ё ФУНКЦИИ ПОСЛЕ Ё":
-                        PrintFunctionsAfterDebug = !PrintFunctionsAfterDebug;
-                        Console.WriteLine(PrintFunctionsAfterDebug ? "Истина" : "Ложь");
-                        break;
-                    case "Ё ФУНКЦИИ Ё":
-                        PrintFunctionsInDebug = !PrintFunctionsInDebug;
-                        Console.WriteLine(PrintFunctionsInDebug ? "Истина" : "Ложь");
                         break;
                     case "Ё ТОКЕНЫ Ё":
                         Tokens = !Tokens;

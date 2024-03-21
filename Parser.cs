@@ -207,7 +207,7 @@ namespace VovaScript
             return parsed;
         }
 
-        public void Run(bool debug = false, bool printVariables = false, bool printFunctionsInDebug = false)
+        public void Run(bool debug = false, bool printVariables = false)
         {
             while (!Match(TokenType.EOF))
             {
@@ -217,7 +217,7 @@ namespace VovaScript
                     Console.ForegroundColor = ConsoleColor.DarkYellow;
                     Console.WriteLine(statement.ToString());
                 }
-                VovaScript2.PrintVariables(printVariables, printFunctionsInDebug);
+                VovaScript2.PrintVariables(printVariables);
 
                 Console.ForegroundColor = ConsoleColor.Yellow;
                 if (!(statement is BlockStatement))

@@ -6,11 +6,6 @@ namespace VovaScript
     {
         public static Token Wordizator(Token word)
         {
-            if (Objects.ContainsFunction(word.View))
-            {
-                word.Type = TokenType.FUNCTION;
-                return word;
-            }
             switch (word.View.ToLower())
             {
                 case "егда":
