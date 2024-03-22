@@ -384,7 +384,7 @@ namespace VovaScript
         public static IClass Doubling = new DoublingFunction();
         public static IClass Writing = new WritingFileFunction();
 */
-        public static IClass NOTHING = new IClass("НИЧЕГО", new Dictionary<string, object>()); // need improving i believe
+        public static object NOTHING = (long)0; // need improving i believe
         public static Stack<Dictionary<string, object>> Registers = new Stack<Dictionary<string, object>>();
         public static Dictionary<string, object> Variables = new Dictionary<string, object>()
         {/*

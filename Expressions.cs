@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace VovaScript
 {
@@ -293,7 +294,7 @@ namespace VovaScript
                 object value = Objects.GetVariable(Name.View);
                 if (value is List<object>)
                     return $"{Name} ИМЕЕТ ЗНАЧЕНИЕ {PrintStatement.ListString((List<object>)value)}";
-                return value.ToString();
+                return Convert.ToString(value);
             }
             throw new Exception("ДАННОЙ ПЕРЕМЕННОЙ ПОКА НЕТУ ????? ЭТО ОШИБКА В ВЫРАЖЕНИИ ПЕРЕМЕННОЙ");
           //  return $"{Objects.NOTHING} ИМЕЕТ ЗНАЧЕНИЕ {Objects.NOTHING}";
@@ -386,7 +387,7 @@ namespace VovaScript
                 args[i] = Args[i].Evaluated();
             if (Objects.ContainsVariable(Name.View))
             {
-                IClass function = Objects.NOTHING;
+                IClass function = null;
                 if (Objects.GetVariable(Name.View) is IClass)
                     function = Objects.GetVariable(Name.View) as IClass;
                 else
@@ -549,10 +550,16 @@ namespace VovaScript
 
         public object Evaluated()
         {
-            object obj = Objects.GetVariable(ObjectName.View);
-            if (obj is IClass)
-                return (obj as IClass).GetAttribute(AttributeName.View);
-            throw new Exception($"ДАННЫЙ ОБЬЕКТ НЕ ЯВЛЯЕТСЯ ОБЬЕКТОМ КАКОГО-ЛИБО КЛАССА: <{ObjectName}>");
+            object a = Objects.Variables;
+            object got = Objects.GetVariable(ObjectName.View);
+            IClass classObject;
+            if (got is IClass)
+                classObject = got as IClass;
+            else
+                throw new Exception($"НЕ ЯВЛЯЕТСЯ ПЕРЕМЕННОЙ-ОБЬЕКТОМ: <{got}>");
+
+            object attribute = classObject.GetAttribute(AttributeName.View);
+            return attribute;
         }
 
         public override string ToString() => $"{ObjectName}.{AttributeName}";

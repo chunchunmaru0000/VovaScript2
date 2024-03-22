@@ -40,7 +40,7 @@ namespace VovaScript
 
         public static void PycOnceLoad(string code)
         {
-            try {
+          //  try {
                 Stopwatch stopwatch = new Stopwatch();
                 stopwatch.Start();
 
@@ -56,7 +56,7 @@ namespace VovaScript
                 stopwatch.Stop();
                 if (TimePrint)
                     Console.WriteLine(stopwatch.Elapsed);
-            } catch (Exception error) { Console.ForegroundColor = ConsoleColor.Red; Console.WriteLine(error.Message); Console.ResetColor(); }
+          //  } catch (Exception error) { Console.ForegroundColor = ConsoleColor.Red; Console.WriteLine(error.Message); Console.ResetColor(); }
 
             PrintVariables(PrintVariablesAfterDebug);
         }

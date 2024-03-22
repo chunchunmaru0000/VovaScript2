@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading;
 
 namespace VovaScript
@@ -56,6 +55,12 @@ namespace VovaScript
             {
                 Result = (bool)value ? "Истина" : "Ложь";
                 Console.WriteLine(Result);
+            }
+            else if (value is IClass)
+            {
+                IClass classObject = value as IClass;
+                Result = classObject.Clone();
+                Console.WriteLine(Convert.ToString(classObject.ContainsAttribute("строкой") ? ((IClass)classObject.GetAttribute("строкой")).Body.Execute() : classObject));
             }
             else
             {
@@ -614,7 +619,7 @@ namespace VovaScript
     { 
         public void Execute() { }
 
-        public object Evaluated() => Objects.NOTHING.Clone();
+        public object Evaluated() => Objects.NOTHING;
 
         public IStatement Clone() => new NothingStatement();
 
@@ -654,7 +659,8 @@ namespace VovaScript
                 if (statement is DeclareFunctionStatement)
                 {
                     DeclareFunctionStatement method = statement as DeclareFunctionStatement;
-                    newClass.AddAttribute(method.Name.View, new IClass(method.Name.View, new Dictionary<string, object>(), new UserFunction(method.Args, Body)));
+                    method.Execute();
+                    newClass.AddAttribute(method.Name.View, new IClass(method.Name.View, new Dictionary<string, object>(), new UserFunction(method.Args, method.Body)));
                     continue;
                 }
                 throw new Exception($"НЕДОПУСТИМОЕ ВЫРАЖЕНИЕ ДЛЯ ОБЬЯВЛЕНИЯ В КЛАССЕ: <{TypePrint.Pyc(statement)}> С ТЕЛОМ {statement}");

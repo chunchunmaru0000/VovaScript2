@@ -71,10 +71,11 @@ namespace VovaScript
                 classObject = Pool.GetAttribute(ObjectName.View) as IClass;
             object got = classObject.GetAttribute(MethodName.View);
             UserFunction method = null;
-            if (got is UserFunction)
+            if (got is IClass)
                 method = ((IClass)got).Body;
             else
                 throw new Exception($"НЕ ЯВЛЯЕТСЯ МЕТОДОМ: <{got}>");
+
             FunctionExpression borrow = Borrow as FunctionExpression;
 
             object[] args = borrow.Args.Select(a => a.Evaluated()).ToArray();

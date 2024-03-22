@@ -53,7 +53,7 @@ namespace VovaScript
             IExpression value = Expression();
             Sep();
             throw new Exception("СДЕЛАЙ ИНДЕКСЫЫЫЫЫЫ ItemAssigny");
-            return new ItemAssignStatement(new NumExpression(variable), index, value);
+         //   return new ItemAssignStatement(new NumExpression(variable), index, value);
         }
 
         private IStatement AttMethody()
