@@ -1,10 +1,8 @@
-﻿using Newtonsoft.Json.Linq;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
-using System.Xml.Linq;
 
 namespace VovaScript
 {
@@ -22,19 +20,8 @@ namespace VovaScript
 
         public void Execute()
         {
-            string name = Variable.View;
             object Result = Expression.Evaluated();
-
-            if (Objects.ContainsVariable(name))
-                Objects.DeleteVariable(name);
-
-            if (Result is IClass)
-            {
-                IClass classObject = Result as IClass;
-                Objects.AddVariable(name, classObject);
-            }
-            else
-                Objects.AddVariable(name, new IClass(name, Result));
+            Objects.AddVariable(Variable.View, Result);
         }
 
         public object Evaluated()
@@ -397,7 +384,7 @@ namespace VovaScript
 
         public void Execute()
         {
-            IClass function = new IClass(Name.View, Objects.NOTHING, new Dictionary<string, IClass>(), new UserFunction(Args, Body));
+            IClass function = new IClass(Name.View, new Dictionary<string, object>(), new UserFunction(Args, Body));
             Function = function;
             if (Pool is null)
                 Objects.AddVariable(Name.View, function);
@@ -409,10 +396,8 @@ namespace VovaScript
         public object Evaluated()
         {
             Execute();
-            return Function;
+            return Function.Clone();
         }
-
-
 
         public override string ToString() => $"{Name} => ({string.Join("|", Args.Select(a => a.View))}) {Body};";
     }
@@ -579,14 +564,14 @@ namespace VovaScript
                 default:
                     throw new Exception($"НЕ МОЖЕТ БЫТЬ: <{name}> <{variable}> <{value}> <{Operation.View}>");
             }
-            Objects.AddVariable(name, new IClass(name, result, new Dictionary<string, IClass>()));
+            Objects.AddVariable(name, result);
             Result = result;
         }
 
         public object Evaluated()
         {
             Execute();
-            return Result;
+            return Result is IClass ? ((IClass)Result).Clone() : Result;
         }
 
         public override string ToString() => $"{Variable.View} {Operation.View} {Expression}";
@@ -655,7 +640,7 @@ namespace VovaScript
 
         public void Execute()
         {
-            IClass newClass = new IClass(ClassName.View, Objects.NOTHING, new Dictionary<string, IClass>());
+            IClass newClass = new IClass(ClassName.View, new Dictionary<string, object>());
             BlockStatement body = Body as BlockStatement;
             foreach (IStatement statement in body.Statements)
             {
@@ -663,16 +648,13 @@ namespace VovaScript
                 {
                     AssignStatement assign = statement as AssignStatement;
                     object result = assign.Expression.Evaluated();
-                    if (result is IClass)
-                        newClass.AddAttribute(assign.Variable.View, (IClass)result);
-                    else
-                        newClass.AddAttribute(assign.Variable.View, new IClass(assign.Variable.View, result, new Dictionary<string, IClass>()));
+                    newClass.AddAttribute(assign.Variable.View, result);
                     continue;
                 }
                 if (statement is DeclareFunctionStatement)
                 {
                     DeclareFunctionStatement method = statement as DeclareFunctionStatement;
-                    newClass.AddAttribute(method.Name.View, new IClass(method.Name.View, Objects.NOTHING, new Dictionary<string, IClass>(), new UserFunction(method.Args, Body)));
+                    newClass.AddAttribute(method.Name.View, new IClass(method.Name.View, new Dictionary<string, object>(), new UserFunction(method.Args, Body)));
                     continue;
                 }
                 throw new Exception($"НЕДОПУСТИМОЕ ВЫРАЖЕНИЕ ДЛЯ ОБЬЯВЛЕНИЯ В КЛАССЕ: <{TypePrint.Pyc(statement)}> С ТЕЛОМ {statement}");
@@ -706,12 +688,13 @@ namespace VovaScript
 
         public IExpression Clon() => new AttributeAssignStatement(ObjName.Clone(), AttributeName.Clone(), Value.Clon());
 
-        public void Execute() => Objects.GetVariable(ObjName.View).AddAttribute(AttributeName.View, new IClass(AttributeName.View, Value.Evaluated()));
+        public void Execute() => (Objects.GetVariable(ObjName.View) as IClass).AddAttribute(AttributeName.View, Value.Evaluated());
 
         public object Evaluated()
         {
             Execute();
-            return Objects.GetVariable(ObjName.View).GetAttribute(AttributeName.View).Evaluated();
+            object attribute = (Objects.GetVariable(ObjName.View) as IClass).GetAttribute(AttributeName.View);
+            return attribute is IClass ? ((IClass)attribute).Clone() : attribute;
         }
         
         public override string ToString() => $"{ObjName}.{AttributeName} = {Value};";
@@ -736,12 +719,13 @@ namespace VovaScript
 
         public IExpression Clon() => new MethodAssignStatement(ObjectName.Clone(), MethodName.Clone(), Args.Select(a => a.Clone()).ToArray(), Body.Clone());
 
-        public void Execute() => Objects.GetVariable(ObjectName.View).AddAttribute(MethodName.View, new IClass(MethodName.View, Objects.NOTHING, new Dictionary<string, IClass>(), new UserFunction(Args, Body)));
+        public void Execute() => (Objects.GetVariable(ObjectName.View) as IClass).AddAttribute(MethodName.View, new IClass(MethodName.View, new Dictionary<string, object>(), new UserFunction(Args, Body)));
 
         public object Evaluated()
         {
             Execute();
-            return Objects.GetVariable(ObjectName.View).GetAttribute(MethodName.View).Clone();
+            object attribute = (Objects.GetVariable(ObjectName.View) as IClass).GetAttribute(MethodName.View);
+            return attribute is IClass ? ((IClass)attribute).Clone() : attribute;
         }
 
         public override string ToString() => $"{ObjectName}.{MethodName} => ({string.Join("|", Args.Select(a => a.View))}) {Body};";

@@ -43,6 +43,7 @@ namespace VovaScript
         public object Evaluated()
         {
             object value = Value.Evaluated();
+            
             switch (Operation.Type) 
             {
                 case TokenType.PLUS:
@@ -283,19 +284,19 @@ namespace VovaScript
 
         public IExpression Clon() => new VariableExpression(Name.Clone());
 
-        public object Evaluated() => Objects.GetVariable(Name.View).Evaluated();
+        public object Evaluated() => Objects.GetVariable(Name.View);
 
         public override string ToString()
         {
             if (Objects.ContainsVariable(Name.View))
             {
-                object value = Objects.GetVariable(Name.View).Evaluated();
+                object value = Objects.GetVariable(Name.View);
                 if (value is List<object>)
                     return $"{Name} ИМЕЕТ ЗНАЧЕНИЕ {PrintStatement.ListString((List<object>)value)}";
                 return value.ToString();
             }
-        //    throw new Exception("ДАННОЙ ПЕРЕМЕННОЙ ПОКА НЕТУ ????? ЭТО ОШИБКА В ВЫРАЖЕНИИ ПЕРЕМЕННОЙ");
-            return $"{Objects.NOTHING} ИМЕЕТ ЗНАЧЕНИЕ {Objects.NOTHING.Evaluated()}";
+            throw new Exception("ДАННОЙ ПЕРЕМЕННОЙ ПОКА НЕТУ ????? ЭТО ОШИБКА В ВЫРАЖЕНИИ ПЕРЕМЕННОЙ");
+          //  return $"{Objects.NOTHING} ИМЕЕТ ЗНАЧЕНИЕ {Objects.NOTHING}";
         }
     }
 
@@ -317,17 +318,17 @@ namespace VovaScript
         public object Evaluated()
         {
             string name = Name.View;
-            object value = Objects.GetVariable(name).Evaluated();
+            object value = Objects.GetVariable(name);
             if (value is long || value is bool)
             {
                 long temp = value is bool ? Convert.ToBoolean(value) ? 1 : 0 : Convert.ToInt64(value);
                 switch (Operation.Type)
                 {
                     case TokenType.PLUSPLUS:
-                        Objects.AddVariable(name, new IClass(name, ++temp, new Dictionary<string, IClass>()));
+                        Objects.AddVariable(name, ++temp);
                         return temp;
                     case TokenType.MINUSMINUS:
-                        Objects.AddVariable(name, new IClass(name, --temp, new Dictionary<string, IClass>()));
+                        Objects.AddVariable(name, --temp);
                         return temp;
                     default:
                         throw new Exception("НЕВОЗМОЖНО");
@@ -339,10 +340,10 @@ namespace VovaScript
                 switch (Operation.Type)
                 {
                     case TokenType.PLUSPLUS:
-                        Objects.AddVariable(name, new IClass(name, ++temp, new Dictionary<string, IClass>()));
+                        Objects.AddVariable(name, ++temp);
                         return temp;
                     case TokenType.MINUSMINUS:
-                        Objects.AddVariable(name, new IClass(name, --temp, new Dictionary<string, IClass>()));
+                        Objects.AddVariable(name, --temp);
                         return temp;
                     default:
                         throw new Exception("НЕВОЗМОЖНО");
@@ -351,42 +352,7 @@ namespace VovaScript
             throw new Exception($"С ДАННЫМ ЗНАЧЕНИЕМ {value} ДАННОЕ ДЕЙСТВИЕ ({Operation.View}) НЕВОЗМОЖНО");
         }
 
-        public void Execute()
-        {
-            string name = Name.View;
-            object value = Objects.GetVariable(name).Evaluated();
-            if (value is long || value is bool)
-            {
-                long temp = value is bool ? Convert.ToBoolean(value) ? 1 : 0 : Convert.ToInt64(value);
-                switch (Operation.Type)
-                {
-                    case TokenType.PLUSPLUS:
-                        Objects.AddVariable(name, new IClass(name, ++temp, new Dictionary<string, IClass>()));
-                        return;
-                    case TokenType.MINUSMINUS:
-                        Objects.AddVariable(name, new IClass(name, --temp, new Dictionary<string, IClass>()));
-                        return;
-                    default:
-                        throw new Exception("НЕВОЗМОЖНО");
-                }
-            }
-            if (value is double)
-            {
-                double temp = Convert.ToDouble(value);
-                switch (Operation.Type)
-                {
-                    case TokenType.PLUSPLUS:
-                        Objects.AddVariable(name, new IClass(name, ++temp, new Dictionary<string, IClass>()));
-                        return;
-                    case TokenType.MINUSMINUS:
-                        Objects.AddVariable(name, new IClass(name, --temp, new Dictionary<string, IClass>()));
-                        return;
-                    default:
-                        throw new Exception("НЕВОЗМОЖНО");
-                }
-            }
-            throw new Exception($"С ДАННЫМ ЗНАЧЕНИЕМ {value} ДАННОЕ ДЕЙСТВИЕ ({Operation.View}) НЕВОЗМОЖНО");
-        }
+        public void Execute() => Evaluated();
 
         public override string ToString() => '<' + Operation.ToString() + Name + '>';
     }
@@ -420,15 +386,19 @@ namespace VovaScript
                 args[i] = Args[i].Evaluated();
             if (Objects.ContainsVariable(Name.View))
             {
-                IClass function = Objects.GetVariable(Name.View);
+                IClass function = Objects.NOTHING;
+                if (Objects.GetVariable(Name.View) is IClass)
+                    function = Objects.GetVariable(Name.View) as IClass;
+                else
+                    throw new Exception($"ДАННЫЙ ОБЬЕКТ НЕ ЯВЛЯЕТСЯ ФУНКЦИЕЙ <{function}>");
                 if (function.Body is UserFunction)
                 {
-                    UserFunction userFunction = function.Body as UserFunction;
+                    UserFunction userFunction = function.Body;
                     if (argov != userFunction.ArgsCount())
                         throw new Exception($"НЕВЕРНОЕ КОЛИЧЕСТВО АРГУМЕНТОВ: БЫЛО<{argov}> ОЖИДАЛОСЬ<{userFunction.ArgsCount()}>");
                     Objects.Push();
                     for (int i = 0; i < argov; i++)
-                        Objects.AddVariable(userFunction.GetArgName(i), new IClass(userFunction.GetArgName(i), args[i]));
+                        Objects.AddVariable(userFunction.GetArgName(i), args[i]);
                     object result = userFunction.Execute();
                     Objects.Pop();
                     return result;
@@ -577,7 +547,13 @@ namespace VovaScript
 
         public IExpression Clon() => new AttributeExpression(ObjectName.Clone(), AttributeName.Clone());
 
-        public object Evaluated() => Objects.GetVariable(ObjectName.View).GetAttribute(AttributeName.View);
+        public object Evaluated()
+        {
+            object obj = Objects.GetVariable(ObjectName.View);
+            if (obj is IClass)
+                return (obj as IClass).GetAttribute(AttributeName.View);
+            throw new Exception($"ДАННЫЙ ОБЬЕКТ НЕ ЯВЛЯЕТСЯ ОБЬЕКТОМ КАКОГО-ЛИБО КЛАССА: <{ObjectName}>");
+        }
 
         public override string ToString() => $"{ObjectName}.{AttributeName}";
     }
@@ -604,20 +580,16 @@ namespace VovaScript
                 {
                     AssignStatement assign = assignment as AssignStatement;
                     object result = assign.Expression.Evaluated();
-                    if (result is IClass)
-                        classObject.AddAttribute(assign.Variable.View, (IClass)result);
-                    else
-                        classObject.AddAttribute(assign.Variable.View, new IClass(assign.Variable.View, result, new Dictionary<string, IClass>()));
+                    classObject.AddAttribute(assign.Variable.View, result);
                     continue;
                 }
                 if (assignment is DeclareFunctionStatement)
                 {
                     DeclareFunctionStatement method = assignment as DeclareFunctionStatement;
-                    Objects.Push();
                     method.Execute();
-                    IFunction function = Objects.GetVariable(method.Name.View).Clone();
-                    Objects.Pop();
-                    classObject.AddAttribute(method.Name.View, new IClass(method.Name.View, IClass.HOLLOW, new Dictionary<string, IClass>(), function));
+                    IFunction function = ((IClass)Objects.GetVariable(method.Name.View)).Clone();
+                    Objects.DeleteVariable(method.Name.View);
+                    classObject.AddAttribute(method.Name.View, new IClass(method.Name.View, new Dictionary<string, object>(), function));
                     continue;
                 }
                 assignment.Execute();

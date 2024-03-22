@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 
@@ -65,10 +66,15 @@ namespace VovaScript
         {
             IClass classObject;
             if (Pool is null)
-                classObject = Objects.GetClass(ObjectName.View);
+                classObject = Objects.GetVariable(ObjectName.View) as IClass;
             else
-                classObject = Pool.GetAttribute(ObjectName.View);
-            UserFunction method = classObject.GetAttribute(MethodName.View).Body as UserFunction;
+                classObject = Pool.GetAttribute(ObjectName.View) as IClass;
+            object got = classObject.GetAttribute(MethodName.View);
+            UserFunction method = null;
+            if (got is UserFunction)
+                method = ((IClass)got).Body;
+            else
+                throw new Exception($"НЕ ЯВЛЯЕТСЯ МЕТОДОМ: <{got}>");
             FunctionExpression borrow = Borrow as FunctionExpression;
 
             object[] args = borrow.Args.Select(a => a.Evaluated()).ToArray();
@@ -82,7 +88,7 @@ namespace VovaScript
             for (int i = 0; i < method.ArgsCount(); i++)
             {
                 string arg = method.GetArgName(i);
-                Objects.AddVariable(arg, new IClass(arg, args[i]));
+                Objects.AddVariable(arg, args[i]);
             }
             //execute
             object result = method.Execute();

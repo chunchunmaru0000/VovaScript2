@@ -1,8 +1,6 @@
-﻿using Newtonsoft.Json.Linq;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
 
 namespace VovaScript
 {
@@ -299,25 +297,21 @@ namespace VovaScript
         IFunction Cloned();
     }
 
-    public class IClass : IExpression, IFunction
+    public class IClass : IFunction
     {
         public string Name;
-        public object Value;
-        public IFunction Body;
-        public static Dictionary<string, IClass> HOLLOW = new Dictionary<string, IClass>();
-        public Dictionary<string, IClass> Attributes = new Dictionary<string, IClass>();
-        public Stack<Dictionary<string, IClass>> Registers = new Stack<Dictionary<string, IClass>>();
+        public UserFunction Body;
+        public static Dictionary<string, object> HOLLOW = new Dictionary<string, object>();
+        public Dictionary<string, object> Attributes = new Dictionary<string, object>();
+        public Stack<Dictionary<string, object>> Registers = new Stack<Dictionary<string, object>>();
 
-        public IClass(string name, object value, Dictionary<string, IClass> attributes, IFunction body = null)
+        public IClass(string name, Dictionary<string, object> attributes, IFunction body = null)
         {
             Name = name;
-            Value = value;
             Attributes = attributes;
-            Body = body;
-            AddAttribute("строкой", new IClass("__строкой__", $"<ОБЬЕКТ КЛАССА {Name}>", new Dictionary<string, IClass>()));
-
+            Body = (UserFunction)body;
         }
-
+        /*
         public IClass(IClass toClone)
         {
             IClass clone = toClone.Clone();
@@ -332,7 +326,7 @@ namespace VovaScript
             Name = name;
             Value = value;
             Body = null;
-            Attributes = new Dictionary<string, IClass>();
+            Attributes = new Dictionary<string, object>();
         }
 
         public IClass(object value)
@@ -340,24 +334,21 @@ namespace VovaScript
             Name = Convert.ToString(value);
             Value = value;
             Body = null;
-            Attributes = new Dictionary<string, IClass>();
+            Attributes = new Dictionary<string, object>();
         }
+        */
 
-        public object Evaluated() => Value is IClass ? ((IClass)Value).Evaluated() : Value;
-
-        public object Execute(params object[] obj) => Body is null ? Value : Body.Execute(obj);
-
-        public IExpression Clon() => new NumExpression(Value);
+        public object Execute(params object[] obj) => Body.Execute(obj);
         
-        public IClass Clone() => new IClass(Name, Value is IClass ? ((IClass)Value).Clone() : Value, new Dictionary<string, IClass>(Attributes), Body.Cloned());
+        public IClass Clone() => new IClass(Name, new Dictionary<string, object>(Attributes), Body is null ? null : Body.Cloned());
 
-        public IFunction Cloned() => Body.Cloned();
+        public IFunction Cloned() => Clone();
         
         public bool ContainsAttribute(string key) => Attributes.ContainsKey(key);
 
-        public IClass GetAttribute(string key) => ContainsAttribute(key) ? Attributes[key] : Objects.NOTHING;
+        public object GetAttribute(string key) => ContainsAttribute(key) ? Attributes[key] : Objects.NOTHING;
 
-        public void AddAttribute(string key, IClass value)
+        public void AddAttribute(string key, object value)
         {
             if (Attributes.ContainsKey(key))
                 Attributes[key] = value;
@@ -365,11 +356,11 @@ namespace VovaScript
                 Attributes.Add(key, value);
         }
 
-        public void Push() => Registers.Push(new Dictionary<string, IClass>(Attributes));
+        public void Push() => Registers.Push(new Dictionary<string, object>(Attributes));
 
         public void Pop() => Attributes = Registers.Pop();
 
-        public override string ToString() => Convert.ToString(GetAttribute("строкой").Evaluated());
+        public override string ToString() => ContainsAttribute("строкой") ? Convert.ToString(((IClass)GetAttribute("строкой")).Execute()) : $"<ОБЬЕКТ КЛАССА {Name}>";
     }
 
     public static class Objects
@@ -393,9 +384,9 @@ namespace VovaScript
         public static IClass Doubling = new DoublingFunction();
         public static IClass Writing = new WritingFileFunction();
 */
-        public static IClass NOTHING = new IClass("НИЧЕГО", (long)0, new Dictionary<string, IClass>()); // need improving i believe
-        public static Stack<Dictionary<string, IClass>> Registers = new Stack<Dictionary<string, IClass>>();
-        public static Dictionary<string, IClass> Variables = new Dictionary<string, IClass>()
+        public static IClass NOTHING = new IClass("НИЧЕГО", new Dictionary<string, object>()); // need improving i believe
+        public static Stack<Dictionary<string, object>> Registers = new Stack<Dictionary<string, object>>();
+        public static Dictionary<string, object> Variables = new Dictionary<string, object>()
         {/*
             { "ПИ", Math.PI },
             { "Е", Math.E },
@@ -429,9 +420,9 @@ namespace VovaScript
 
         public static bool ContainsVariable(string key) => Variables.ContainsKey(key);
 
-        public static IClass GetVariable(string key) => ContainsVariable(key) ? Variables[key] : NOTHING;
+        public static object GetVariable(string key) => ContainsVariable(key) ? Variables[key] : NOTHING;
 
-        public static void AddVariable(string key, IClass value)
+        public static void AddVariable(string key, object value)
         {
             if (Variables.ContainsKey(key))
                 Variables[key] = value;
@@ -443,7 +434,7 @@ namespace VovaScript
 
         public static void Push()
         {
-            Registers.Push(new Dictionary<string, IClass>(Variables));
+            Registers.Push(new Dictionary<string, object>(Variables));
         }
 
         public static void Pop()
@@ -453,7 +444,7 @@ namespace VovaScript
 
         /*           CLASSES         */
 
-        public static IClass Fedkin = new IClass("Федкин", (long)0, new Dictionary<string, IClass>());
+        public static IClass Fedkin = new IClass("Федкин", new Dictionary<string, object>());
 
         public static Dictionary<string, IClass> Classes = new Dictionary<string, IClass>()
         {
