@@ -64,12 +64,23 @@ namespace VovaScript
         {
             Token objName = Consume(TokenType.VARIABLE);
             Consume(TokenType.DOT);
-            Token thingName = Consume(TokenType.VARIABLE);
+            List<Token> attrs = new List<Token>();
+            //Token thingName = Consume(TokenType.VARIABLE);
+            while (Current.Type != TokenType.ARROW && Current.Type != TokenType.DO_EQUAL)
+            {
+                attrs.Add(Consume(TokenType.VARIABLE));
+                if (!Match(TokenType.DOT))
+                    if (Current.Type == TokenType.ARROW || Current.Type == TokenType.DO_EQUAL)
+                        break;
+                    else
+                        throw new Exception($"ОШИБКА СИНТАКИСА РЯДОМ С: {Near(6)}");
+            }
+
             if (Match(TokenType.DO_EQUAL))
             {
                 IExpression value = Expression();
                 Sep();
-                return new AttributeAssignStatement(objName, thingName, value);
+                return new AttributeAssignStatement(objName, attrs.ToArray(), value);
             }
             if (Match(TokenType.ARROW))
             {
@@ -81,19 +92,10 @@ namespace VovaScript
                     Sep();
                 }
                 IStatement body = OneOrBlock();
-                return new MethodAssignStatement(objName, thingName, args.ToArray(), body);
+                throw new Exception($"СДЕЛАЙ МЕТОДЫ ЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭ");
+               // return new MethodAssignStatement(objName, attrs.ToArray(), args.ToArray(), body);
             }
-
-            List<Token> rgs = new List<Token>();
-            if (Current.Type == TokenType.LEFTSCOB)
-            {
-                position--; // ЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭ
-                IExpression borrow = FuncParsy();
-                return new PrintStatement(new MethodExpression(objName, thingName, borrow));
-            }
-
-            return new PrintStatement(new AttributeExpression(objName, thingName));
-            throw new Exception("ДАННОЕ СЛОВО НЕ МОЖЕТ БЫТЬ ИСПОЛЬЗОВАННО В КАЧЕСТВЕ НАЗВАНИЯ ДЛЯ МЕТОДА ИЛИ АТТРИБУТА: {}");
+            throw new Exception($"ДАННОЕ СЛОВО НЕ МОЖЕТ БЫТЬ ИСПОЛЬЗОВАННО В КАЧЕСТВЕ НАЗВАНИЯ ДЛЯ МЕТОДА ИЛИ АТТРИБУТА: {objName}.<{string.Join(".", attrs)}>");
         }
 
         private IStatement Printy()

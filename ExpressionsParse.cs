@@ -19,23 +19,6 @@ namespace VovaScript
             return function;
         }
 
-        private IExpression Methody()
-        {
-            Token objectName = Consume(TokenType.VARIABLE);
-            Consume(TokenType.DOT);
-            Token methodName = Current;
-            IExpression borrow = FuncParsy();
-            return new MethodExpression(objectName, methodName, borrow);
-        }
-
-        private IExpression Attributy()
-        {
-            Token objectName = Consume(TokenType.VARIABLE);
-            Consume(TokenType.DOT);
-            Token attributeName = Consume(TokenType.VARIABLE);
-            return new AttributeExpression(objectName, attributeName);
-        }
-
         private IExpression Newy()
         {
             Token className = Consume(TokenType.VARIABLE);
@@ -225,8 +208,9 @@ namespace VovaScript
                     Token attr = Consume(Current.Type);
                     if (Match(TokenType.LEFTSCOB))
                     {
-                        throw new Exception("ТЫ ДАУН ЕЩЕ НЕ СДЕЛАЛ ПАРСИНГ МЕТОДОВ");
-                        //method = чететототам
+                        position -= 2; //  ЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛ
+                        IExpression borrow = FuncParsy();
+                        result = new MethodExpression(result, attr, borrow);
                         continue;
                     }
                     result = new AttributeExpression(result, attr);
@@ -234,6 +218,8 @@ namespace VovaScript
                 }
                 break;
             }
+        //    if (Match(TokenType.DO_EQUAL))
+          //      return new AssignStatement(result, Expression());
             return result;
         }
 

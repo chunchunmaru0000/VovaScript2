@@ -9,11 +9,18 @@ namespace VovaScript
     {
         public Token Variable;
         public IExpression Expression;
+        public IExpression Slot;
         public object Result;
 
         public AssignStatement(Token variable, IExpression expression) 
         { 
             Variable = variable;
+            Expression = expression;
+        }
+
+        public AssignStatement(IExpression slot, IExpression expression)
+        {
+            Slot = slot;
             Expression = expression;
         }
 
@@ -700,26 +707,71 @@ namespace VovaScript
     {
         public Token ObjName;
         public Token AttributeName;
+        public Token[] Attributes;
         public IExpression Value;
+        public object Result;
 
-        public AttributeAssignStatement(Token objName, Token attributeName, IExpression value)
+        public AttributeAssignStatement(Token objName, Token[] attrs, IExpression value)
         {
             ObjName = objName;
-            AttributeName = attributeName;
+            Attributes = attrs;
             Value = value;
         }
 
-        public IStatement Clone() => new AttributeAssignStatement(ObjName.Clone(), AttributeName.Clone(), Value.Clon());
+        //public IStatement Clone() => new AttributeAssignStatement(ObjName.Clone(), AttributeName.Clone(), Value.Clon());
+        public IStatement Clone() => new AttributeAssignStatement(ObjName.Clone(), Attributes.Select(a => a.Clone()).ToArray(), Value.Clon());
 
-        public IExpression Clon() => new AttributeAssignStatement(ObjName.Clone(), AttributeName.Clone(), Value.Clon());
+        //public IExpression Clon() => new AttributeAssignStatement(ObjName.Clone(), AttributeName.Clone(), Value.Clon());
+        public IExpression Clon() => new AttributeAssignStatement(ObjName.Clone(), Attributes.Select(a => a.Clone()).ToArray(), Value.Clon());
 
-        public void Execute() => (Objects.GetVariable(ObjName.View) as IClass).AddAttribute(AttributeName.View, Value.Evaluated());
+        public void Execute() 
+        {
+            if (Objects.ContainsVariable(ObjName.View))
+            {
+                object got = Objects.GetVariable(ObjName.View);
+                if (got is IClass)
+                {
+                    IClass classObject = got as IClass;
+                    IClass last = null;
+                    for (int i = 0; i < Attributes.Length-1; i++)
+                    {
+                        if (classObject.ContainsAttribute(Attributes[i].View))
+                        {
+                            got = classObject.GetAttribute(Attributes[i].View);
+                            last = classObject;
+                            if (got is IClass)
+                            {
+                                classObject = got as IClass;
+                                continue;
+                            }
+                            if (i == Attributes.Length - 1)
+                            {
+                                Result = Value.Evaluated();
+                                last.AddAttribute(Attributes[i].View, Result);
+                                return;
+                            }
+                            throw new Exception($"НЕ ОБЪЕКТ: <{Attributes[i]}> ГДЕ-ТО В <{ObjName}>");
+                        }
+                        if (i == Attributes.Length - 1)
+                        {
+                            Result = Value.Evaluated();
+                            classObject.AddAttribute(Attributes[i].View, Result);
+                            return;
+                        }
+                        throw new Exception($"НЕСУЩЕСТВУЮЩИЙ КАК ОБЪЕКТ: <{Attributes[i]}> ГДЕ-ТО В <{ObjName}>");
+                    }
+                    Result = Value.Evaluated();
+                    classObject.AddAttribute(Attributes.Last().View, Result);
+                    return;
+                }
+            }
+            throw new Exception($"НЕСУЩЕСТВУЮЩИЙ КАК ОБЪЕКТ: <{ObjName}>");
+        }
 
         public object Evaluated()
         {
             Execute();
-            object attribute = (Objects.GetVariable(ObjName.View) as IClass).GetAttribute(AttributeName.View);
-            return attribute is IClass ? ((IClass)attribute).Clone() : attribute;
+            return Result is IClass ? ((IClass)Result).Clone() : Result;
         }
         
         public override string ToString() => $"{ObjName}.{AttributeName} = {Value};";

@@ -553,7 +553,7 @@ namespace VovaScript
             AttributeName = attributeName;
         }
 
-        public IExpression Clon() => new AttributeExpression(ObjectName.Clone(), AttributeName.Clone());
+        public IExpression Clon() => new AttributeExpression(Value.Clon(), AttributeName.Clone());
 
         public object Evaluated()
         {
@@ -570,6 +570,7 @@ namespace VovaScript
             }
             if (value is string)
             {
+                // return new IString((string)value).GetAttribute(AttributeName.View)
                 return value;
             }
 

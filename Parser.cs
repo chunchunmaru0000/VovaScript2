@@ -31,11 +31,17 @@ namespace VovaScript
 
         private Token Current => Get(0);
 
+        private string Near(int range) => string.Join("|", Enumerable.Range(-range, range*2).Select(g => Get(g).View));
+
         private Token Consume(TokenType type)
         {
             Token current = Current;
             if (Current.Type != type)
-                throw new Exception($"ТОКЕН НЕ СОВПАДАЕТ С ОЖИДАЕМЫМ\nОЖИДАЛСЯ: <{type.GetStringValue()}>\nТЕКУЩИЙ: <{Current.Type.GetStringValue()}>\nПОЗИЦИЯ: КОМАНДА<{line}> СЛОВО<{position}>");
+                throw new Exception($"ТОКЕН НЕ СОВПАДАЕТ С ОЖИДАЕМЫМ\n" +
+                                    $"ОЖИДАЛСЯ: <{type.GetStringValue()}>\n" +
+                                    $"ТЕКУЩИЙ: <{Current.Type.GetStringValue()}>\n" +
+                                    $"ПОЗИЦИЯ: КОМАНДА<{line}> СЛОВО<{position}>\n" +
+                                    $"{Near(3)}");
             position++;
             return current;
         }
@@ -44,7 +50,11 @@ namespace VovaScript
         {
             Token current = Current;
             if (Current.Type != type0 && Current.Type != type1)
-                throw new Exception($"ТОКЕН НЕ СОВПАДАЕТ С ОЖИДАЕМЫМ\nОЖИДАЛСЯ: <{type0.GetStringValue()}> ИЛИ <{type1.GetStringValue()}>\nТЕКУЩИЙ: <{Current.Type.GetStringValue()}>\nПОЗИЦИЯ: КОМАНДА<{line}> СЛОВО<{position}>");
+                throw new Exception($"ТОКЕН НЕ СОВПАДАЕТ С ОЖИДАЕМЫМ\n" +
+                                    $"ОЖИДАЛСЯ: <{type0.GetStringValue()}> ИЛИ <{type1.GetStringValue()}>\n" +
+                                    $"ТЕКУЩИЙ: <{Current.Type.GetStringValue()}>\n" +
+                                    $"ПОЗИЦИЯ: КОМАНДА<{line}> СЛОВО<{position}>\n" +
+                                    $"{Near(3)}");
             position++;
             return current;
         }
@@ -133,11 +143,10 @@ namespace VovaScript
 
                 if (next.Type == TokenType.LCUBSCOB)
                     return ItemAssigny();
-
-                if (next.Type == TokenType.DOT)
-                    if (next2.Type == TokenType.VARIABLE)
-                        return AttMethody();
             }
+
+            if (Match(TokenType.IN))
+                return AttMethody();
 
             if (current.Type == TokenType.PLUSPLUS || current.Type == TokenType.MINUSMINUS && next.Type == TokenType.VARIABLE)
                 return BeforeIncDecy();

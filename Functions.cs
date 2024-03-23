@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 
@@ -50,56 +49,65 @@ namespace VovaScript
         public Token ObjectName;
         public Token MethodName;
         public IExpression Borrow;
-        public IClass Pool;
+        public IExpression Pool;
 
         public MethodExpression(Token objectName, Token methodName, IExpression borrow, IClass pool = null)
         {
             ObjectName = objectName;
             MethodName = methodName;
             Borrow = borrow;
+           // Pool = pool;
+        }
+
+        public MethodExpression(IExpression pool, Token methodName, IExpression borrow)
+        {
             Pool = pool;
+            MethodName = methodName;
+            Borrow = borrow;
         }
 
         public IExpression Clon() => new MethodExpression(ObjectName.Clone(), MethodName.Clone(), Borrow.Clon());
 
         public object Evaluated()
         {
-            IClass classObject;
-            if (Pool is null)
-                classObject = Objects.GetVariable(ObjectName.View) as IClass;
-            else
-                classObject = Pool.GetAttribute(ObjectName.View) as IClass;
-            object got = classObject.GetAttribute(MethodName.View);
-            UserFunction method = null;
+            object got = Pool.Evaluated();
             if (got is IClass)
-                method = ((IClass)got).Body as UserFunction;
-            else
-                throw new Exception($"НЕ ЯВЛЯЕТСЯ МЕТОДОМ: <{got}>");
-
-            FunctionExpression borrow = Borrow as FunctionExpression;
-
-            object[] args = borrow.Args.Select(a => a.Evaluated()).ToArray();
-            if (args.Length < method.ArgsCount())
-                throw new Exception($"НЕВЕРНОЕ КОЛИЧЕСТВО АРГУМЕНТОВ: БЫЛО<{args.Length}> ОЖИДАЛОСЬ<{method.ArgsCount()}>");
-            Objects.Push();
-            //attrs
-            foreach (var attribute in classObject.Attributes)
-                Objects.AddVariable(attribute.Key, attribute.Value);
-            //attrs
-            for (int i = 0; i < method.ArgsCount(); i++)
             {
-                string arg = method.GetArgName(i);
-                Objects.AddVariable(arg, args[i]);
-            }
-            //execute
-            object result = method.Execute();
-            //restore or update
-            foreach (var variable in Objects.Variables)
-                if (classObject.ContainsAttribute(variable.Key))
-                    classObject.AddAttribute(variable.Key, variable.Value);
+                IClass classObject = got as IClass;
+                // proceed
+                got = classObject.GetAttribute(MethodName.View);
+                UserFunction method = null;
+                if (got is IClass)
+                    method = ((IClass)got).Body as UserFunction;
+                else
+                    throw new Exception($"НЕ ЯВЛЯЕТСЯ МЕТОДОМ: <{got}>");
 
-            Objects.Pop();
-            return result;
+                FunctionExpression borrow = Borrow as FunctionExpression;
+
+                object[] args = borrow.Args.Select(a => a.Evaluated()).ToArray();
+                if (args.Length < method.ArgsCount())
+                    throw new Exception($"НЕВЕРНОЕ КОЛИЧЕСТВО АРГУМЕНТОВ: БЫЛО<{args.Length}> ОЖИДАЛОСЬ<{method.ArgsCount()}>");
+                Objects.Push();
+                // attrs
+                foreach (var attribute in classObject.Attributes)
+                    Objects.AddVariable(attribute.Key, attribute.Value);
+                // attrs
+                for (int i = 0; i < method.ArgsCount(); i++)
+                {
+                    string arg = method.GetArgName(i);
+                    Objects.AddVariable(arg, args[i]);
+                }
+                // execute
+                object result = method.Execute();
+                // restore or update
+                foreach (var variable in Objects.Variables)
+                    if (classObject.ContainsAttribute(variable.Key))
+                        classObject.AddAttribute(variable.Key, variable.Value);
+
+                Objects.Pop();
+                return result;
+            }
+            throw new Exception($"НЕ ЯВЛЯЕТСЯ МЕТОДОМ: <{got}>");
         }
 
         public override string ToString() => $"{ObjectName}.{Borrow}";
