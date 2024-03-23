@@ -6,7 +6,7 @@ namespace VovaScript
     {
         public static Token Wordizator(Token word)
         {
-            switch (word.View.ToLower())
+            switch (word.View)
             {
                 case "егда":
                     word.Type = TokenType.WORD_IF;
@@ -38,6 +38,12 @@ namespace VovaScript
                     word.Type = TokenType.CLASS;
                     return word;
                 case "новый":
+                    word.Type = TokenType.NEW;
+                    return word;
+                case "новая":
+                    word.Type = TokenType.NEW;
+                    return word;
+                case "новое":
                     word.Type = TokenType.NEW;
                     return word;
                 case "здесь":

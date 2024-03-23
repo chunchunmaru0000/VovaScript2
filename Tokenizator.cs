@@ -99,9 +99,11 @@ namespace VovaScript
                 {
                     if (Current == '.')
                         dots++;
-                    Console.WriteLine("ЗАТЕСТИ ЦИФРЫ С 2 ТОЧКАМИ");
                     if (dots > 1)
+                    {
+                        dots--;
                         break;
+                    }
                     Next();
                 }
                 string word = code.Substring(start, position - start).Replace('.', ',');

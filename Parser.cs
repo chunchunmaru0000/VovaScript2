@@ -194,7 +194,7 @@ namespace VovaScript
         private IStatement Block()
         {
             BlockStatement block = new BlockStatement();
-            while (!Match(TokenType.RTRISCOB))
+            while (!Match(TokenType.RTRISCOB, TokenType.RIGHTSCOB))
                 block.AddStatement(Statement());
             return block;
         }

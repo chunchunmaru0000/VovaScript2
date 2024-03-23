@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
+using System.Security.AccessControl;
 
 namespace VovaScript
 {
@@ -9,7 +11,7 @@ namespace VovaScript
     {
         private IStatement OneOrBlock()
         {
-            if (Match(TokenType.LTRISCOB))
+            if (Match(TokenType.LTRISCOB, TokenType.LEFTSCOB))
                 return Block();
             else
             {
@@ -45,15 +47,17 @@ namespace VovaScript
             Token variable = Current;
             Consume(TokenType.VARIABLE);
 
-            Consume(TokenType.LCUBSCOB);
+            Consume(TokenType.LCUBSCOB, TokenType.LEFTSCOB);
             IExpression index = Expression();
             Consume(TokenType.RCUBSCOB);
 
-            Consume(TokenType.DO_EQUAL);
-            IExpression value = Expression();
-            Sep();
-            throw new Exception("СДЕЛАЙ ИНДЕКСЫЫЫЫЫЫ ItemAssigny");
-         //   return new ItemAssignStatement(new NumExpression(variable), index, value);
+            if (Match(TokenType.DO_EQUAL))
+            {
+                IExpression value = Expression();
+                Sep();
+                return new ItemAssignStatement(new NumExpression(variable), index, value);
+            }
+            return new PrintStatement(new ListTakeExpression(variable, index, null));
         }
 
         private IStatement AttMethody()
@@ -79,6 +83,16 @@ namespace VovaScript
                 IStatement body = OneOrBlock();
                 return new MethodAssignStatement(objName, thingName, args.ToArray(), body);
             }
+
+            List<Token> rgs = new List<Token>();
+            if (Current.Type == TokenType.LEFTSCOB)
+            {
+                position--; // ЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭ
+                IExpression borrow = FuncParsy();
+                return new PrintStatement(new MethodExpression(objName, thingName, borrow));
+            }
+
+            return new PrintStatement(new AttributeExpression(objName, thingName));
             throw new Exception("ДАННОЕ СЛОВО НЕ МОЖЕТ БЫТЬ ИСПОЛЬЗОВАННО В КАЧЕСТВЕ НАЗВАНИЯ ДЛЯ МЕТОДА ИЛИ АТТРИБУТА: {}");
         }
 
@@ -215,8 +229,12 @@ namespace VovaScript
         public IStatement Classy()
         {
             Token className = Consume(TokenType.VARIABLE);
-            IStatement body = OneOrBlock();
-            return new DeclareClassStatement(className, body);
+            if (Current.Type == TokenType.LCUBSCOB || Current.Type == TokenType.LEFTSCOB)
+            {
+                IStatement body = OneOrBlock();
+                return new DeclareClassStatement(className, body);
+            }
+            throw new Exception("ОБЬЯВЛЕНИЕ ТЕЛА КЛАССА МОЖЕТ БЫТЬ ТОЛЬКО В СКОБКАХ");
         }
 
         public IStatement SQLCreateDatabasy()

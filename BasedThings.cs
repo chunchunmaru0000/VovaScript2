@@ -4,80 +4,6 @@ using System.Linq;
 
 namespace VovaScript
 {
-    public static class TypePrint
-    {
-        public static string Pyc(object value)
-        {
-            switch (value.GetType().ToString())
-            {
-                case "System.String":
-                    return "СТРОКА";
-                case "System.Int32":
-                    return "ЧИСЛО 32 ???";
-                case "System.Int64":
-                    return "ЧИСЛО 64";
-                case "System.Double":
-                    return "ЧИСЛО С ТОЧКОЙ 64";
-                case "System.Boolean":
-                    return "ПРАВДИВОСТЬ";
-                case "VovaScript.UserFunction":
-                    return "ПОЛЬЗОВАТЕЛЬСКАЯ ФУНКЦИЯ";
-                case "VovaScript.Sinus":
-                    return "ФУНКЦИЯ СИНУС";
-                case "VovaScript.Cosinus":
-                    return "ФУНКЦИЯ КОСИНУС";
-                case "VovaScript.Ceiling":
-                    return "ФУНКЦИЯ ПОТОЛОК";
-                case "VovaScript.Floor":
-                    return "ФУНКЦИЯ ЗАЗЕМЬ";
-                case "VovaScript.Tan":
-                    return "ФУНКЦИЯ ТАНГЕНС";
-                case "VovaScript.FunctionExpression":
-                    return "ФУНКЦИЯ";
-                case "VovaScript.Max":
-                    return "ФУНКЦИЯ НАИБОЛЬШЕЕ";
-                case "VovaScript.Min":
-                    return "НАИМЕНЬШЕЕ";
-                case "System.Collections.Generic.List`1[System.Object]":
-                    return "СПИСОК";
-                case "[System.Collections.Generic.List`1[VovaScript.IExpression]]":
-                    return "СПИСОК";
-                case "System.Object[]":
-                    return "СПИСОК";
-                case "VovaScript.SQLSelectExpression":
-                    return "ВЫБОР ИЗ ТАБЛИЦЫ";
-                case "VovaScript.DeclareFunctionStatement":
-                    return "НАЗНАЧИТЬ ФУНКЦИЮ";
-                case "VovaScript.AssignStatement":
-                    return "НАЗНАЧИТЬ ПЕРЕМЕННУЮ";
-                case "VovaScript.MethodExpression":
-                    return "МЕТОД";
-                default:
-                    return value.GetType().ToString();
-                    //throw new Exception($"НЕ ПОМНЮ ЧТО БЫ ДОБАЛЯЛ ТАКОЙ ТИП: <{value.GetType().Name}> У <{value}>");
-            }
-        }
-    }
-    public class StringValueAttribute : Attribute
-    {
-        public string Value { get; }
-
-        public StringValueAttribute(string value)
-        {
-            Value = value;
-        }
-    }
-    public static class EnumExtensions
-    {
-        public static string GetStringValue(this Enum value)
-        {
-            var type = value.GetType();
-            var fieldInfo = type.GetField(value.ToString());
-            var attribs = fieldInfo.GetCustomAttributes(typeof(StringValueAttribute), false) as StringValueAttribute[];
-            return attribs.Length > 0 ? attribs[0].Value : null;
-        }
-    }
-
     public enum TokenType
     {
         //base types
@@ -300,7 +226,7 @@ namespace VovaScript
     public class IClass : IFunction
     {
         public string Name;
-        public UserFunction Body;
+        public IFunction Body;
         public static Dictionary<string, object> HOLLOW = new Dictionary<string, object>();
         public Dictionary<string, object> Attributes = new Dictionary<string, object>();
         public Stack<Dictionary<string, object>> Registers = new Stack<Dictionary<string, object>>();
@@ -309,35 +235,8 @@ namespace VovaScript
         {
             Name = name;
             Attributes = attributes;
-            Body = (UserFunction)body;
+            Body = body;
         }
-        /*
-        public IClass(IClass toClone)
-        {
-            IClass clone = toClone.Clone();
-            Name = clone.Name;
-            Value = clone.Value;
-            Body = clone.Body;
-            Attributes = clone.Attributes;
-        }
-
-        public IClass(string name, object value)
-        {
-            Name = name;
-            Value = value;
-            Body = null;
-            Attributes = new Dictionary<string, object>();
-        }
-
-        public IClass(object value)
-        {
-            Name = Convert.ToString(value);
-            Value = value;
-            Body = null;
-            Attributes = new Dictionary<string, object>();
-        }
-        */
-
         public object Execute(params object[] obj) => Body.Execute(obj);
         
         public IClass Clone() => new IClass(Name, new Dictionary<string, object>(Attributes), Body is null ? null : Body.Cloned());
@@ -360,62 +259,98 @@ namespace VovaScript
 
         public void Pop() => Attributes = Registers.Pop();
 
-        public override string ToString() => ContainsAttribute("строкой") ? Convert.ToString(((IClass)GetAttribute("строкой")).Execute()) : $"<ОБЬЕКТ КЛАССА {Name}>";
+        public override string ToString() 
+        {
+            if (ContainsAttribute("строкой"))
+            {
+                object strokoi = GetAttribute("строкой");
+                if (strokoi is IClass)
+                    if (!(((IClass)strokoi).Body is null))
+                        return Convert.ToString(((IClass)strokoi).Body.Execute());
+                    else
+                        return $"<ОБЬЕКТ КЛАССА {Name}>";
+                else
+                    return $"<ОБЬЕКТ КЛАССА {Name}>";
+            }
+            else
+                return $"<ОБЬЕКТ КЛАССА {Name}>";
+        }
     }
 
     public static class Objects
     {
-        /*        VARIABLES          
 
-        public static IClass DO_NOTHING;
-        public static IClass Sinus = new Sinus();
-        public static IClass Cosinus = new Cosinus();
-        public static IClass Ceiling = new Ceiling();
-        public static IClass Floor = new Floor();
-        public static IClass Tan = new Tan();
-        public static IClass Max = new Max();
-        public static IClass Min = new Min();
-        public static IClass Square = new Square();
-        public static IClass ReadAll = new ReadAllFileFunction();
-        public static IClass Split = new SplitFunction();
-        public static IClass Input = new InputFunction();
-        public static IClass Stringing = new StringingFunction();
-        public static IClass Inting = new IntingFunction();
-        public static IClass Doubling = new DoublingFunction();
-        public static IClass Writing = new WritingFileFunction();
-*/
+        public static IClass Sinus = new IClass("синус", new Dictionary<string, object>(), new Sinus());
+        public static IClass Cosinus = new IClass("косинус", new Dictionary<string, object>(), new Cosinus());
+        public static IClass Ceiling = new IClass("потолок", new Dictionary<string, object>(), new Ceiling());
+        public static IClass Floor = new IClass("пол", new Dictionary<string, object>(), new Floor());
+        public static IClass Tan = new IClass("тангенс", new Dictionary<string, object>(), new Tan());
+        public static IClass Max = new IClass("максимум", new Dictionary<string, object>(), new Max());
+        public static IClass Min = new IClass("минимум", new Dictionary<string, object>(), new Min());
+        public static IClass Square = new IClass("корень", new Dictionary<string, object>(), new Square());
+        public static IClass ReadAll = new IClass("вычитать", new Dictionary<string, object>(), new ReadAllFileFunction());
+        public static IClass Split = new IClass("раздел", new Dictionary<string, object>(), new SplitFunction());
+        public static IClass Input = new IClass("ввод", new Dictionary<string, object>(), new InputFunction());
+        public static IClass Stringing = new IClass("строчить", new Dictionary<string, object>(), new StringingFunction());
+        public static IClass Inting = new IClass("числить", new Dictionary<string, object>(), new IntingFunction());
+        public static IClass Doubling = new IClass("точить", new Dictionary<string, object>(), new DoublingFunction());
+        public static IClass Writing = new IClass("писать", new Dictionary<string, object>(), new WritingFileFunction());
+
+        /*        TYPES              */
+
+        public static IClass IInteger = new IClass("asdf", new Dictionary<string, object>
+        {
+            { "строкой", new IClass("__строкой__", new Dictionary<string, object>(),
+                new UserFunction
+                (
+                    new Token[]{new Token()},
+                    new BlockStatement
+                    (
+                        new List<IStatement>()
+                        {
+                            new ReturnStatement
+                            (
+                                new NumExpression(10)
+                            )
+                        }
+                    )
+                )) }
+        });
+
+        /*        VARIABLES          */
         public static object NOTHING = (long)0; // need improving i believe
         public static Stack<Dictionary<string, object>> Registers = new Stack<Dictionary<string, object>>();
         public static Dictionary<string, object> Variables = new Dictionary<string, object>()
-        {/*
+        {
+            { "Число", IInteger },
             { "ПИ", Math.PI },
             { "Е", Math.E },
-            { "ИСПБД", "негр" }
+            { "ИСПБД", "негр" },
             { "синус", Sinus },
             { "косинус", Cosinus },
             { "потолок", Ceiling },
             { "заземь", Floor },
             { "тангенс", Tan },
-            { "макс",  Max },
-            { "максимум",  Max },
-            { "наибольшее",  Max },
-            { "большее",  Max },
-            { "меньшее",  Min },
-            { "мин",  Min },
+            { "макс",  Max.Clone() },
+            { "большее",  Max.Clone() },
+            { "максимум",  Max.Clone() },
+            { "наибольшее",  Max.Clone() },
+            { "мин",  Min.Clone() },
+            { "меньшее",  Min.Clone() },
+            { "минимум",  Min.Clone() },
+            { "наименьшее",  Min.Clone() },
             { "корень",  Square },
-            { "наименьшее",  Min },
-            { "минимум",  Min },
             { "вычитать",  ReadAll },
             { "раздел",  Split },
-            { "хартия",  Input },
-            { "ввод",  Input },
-            { "харатья",  Input },
-            { "ввести",  Input },
+            { "ввод",  Input.Clone() },
+            { "хартия",  Input.Clone() },
+            { "ввести",  Input.Clone() },
+            { "харатья",  Input.Clone() },
             { "строчить",  Stringing },
             { "числить",  Inting },
             { "точить",  Doubling },
-            { "писать",  Writing },
-            { "летописить",  Writing },*/
+            { "писать",  Writing.Clone() },
+            { "летописить",  Writing.Clone() },
         };
 
         public static bool ContainsVariable(string key) => Variables.ContainsKey(key);
@@ -432,35 +367,8 @@ namespace VovaScript
 
         public static void DeleteVariable(string key) => Variables.Remove(key);
 
-        public static void Push()
-        {
-            Registers.Push(new Dictionary<string, object>(Variables));
-        }
+        public static void Push() => Registers.Push(new Dictionary<string, object>(Variables));
 
-        public static void Pop()
-        {
-            Variables = Registers.Pop();
-        }
-
-        /*           CLASSES         */
-
-        public static IClass Fedkin = new IClass("Федкин", new Dictionary<string, object>());
-
-        public static Dictionary<string, IClass> Classes = new Dictionary<string, IClass>()
-        {
-            { "Федкин", Fedkin }
-        };
-
-        public static bool ContainsClass(string key) => Classes.ContainsKey(key);
-
-        public static IClass GetClass(string key) => ContainsClass(key) ? Classes[key] : Classes["ФЕДКИН"];
-
-        public static void AddClass(string key, IClass value)
-        {
-            if (Classes.ContainsKey(key))
-                Classes[key] = value;
-            else
-                Classes.Add(key, value);
-        }
+        public static void Pop() => Variables = Registers.Pop();
     }
 }

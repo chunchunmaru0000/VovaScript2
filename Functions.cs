@@ -72,7 +72,7 @@ namespace VovaScript
             object got = classObject.GetAttribute(MethodName.View);
             UserFunction method = null;
             if (got is IClass)
-                method = ((IClass)got).Body;
+                method = ((IClass)got).Body as UserFunction;
             else
                 throw new Exception($"НЕ ЯВЛЯЕТСЯ МЕТОДОМ: <{got}>");
 

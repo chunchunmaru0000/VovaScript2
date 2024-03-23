@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 
@@ -394,7 +395,7 @@ namespace VovaScript
                     throw new Exception($"ДАННЫЙ ОБЬЕКТ НЕ ЯВЛЯЕТСЯ ФУНКЦИЕЙ <{function}>");
                 if (function.Body is UserFunction)
                 {
-                    UserFunction userFunction = function.Body;
+                    UserFunction userFunction = function.Body as UserFunction;
                     if (argov != userFunction.ArgsCount())
                         throw new Exception($"НЕВЕРНОЕ КОЛИЧЕСТВО АРГУМЕНТОВ: БЫЛО<{argov}> ОЖИДАЛОСЬ<{userFunction.ArgsCount()}>");
                     Objects.Push();
@@ -536,7 +537,7 @@ namespace VovaScript
 
     public sealed class AttributeExpression : IExpression
     {
-        //Token[] ObjectsStack;    ***********************************************************************************
+        IExpression Value;
         Token ObjectName;
         Token AttributeName;
 
@@ -546,23 +547,38 @@ namespace VovaScript
             AttributeName = attributeName;
         }
 
+        public AttributeExpression(IExpression value, Token attributeName)
+        {
+            Value = value;
+            AttributeName = attributeName;
+        }
+
         public IExpression Clon() => new AttributeExpression(ObjectName.Clone(), AttributeName.Clone());
 
         public object Evaluated()
         {
-            object a = Objects.Variables;
-            object got = Objects.GetVariable(ObjectName.View);
-            IClass classObject;
-            if (got is IClass)
-                classObject = got as IClass;
-            else
-                throw new Exception($"НЕ ЯВЛЯЕТСЯ ПЕРЕМЕННОЙ-ОБЬЕКТОМ: <{got}>");
+            object value = Value.Evaluated();
+            if (value is IClass)
+            {
+                IClass classObject = value as IClass;
+                object attribute = classObject.GetAttribute(AttributeName.View);
+                return attribute;
+            }
+            if (value is long)
+            {
+                throw new Exception("КАК ПОЧСИТАЛ ЭТО ЧИСЛОМ");
+            }
+            if (value is string)
+            {
+                return value;
+            }
 
-            object attribute = classObject.GetAttribute(AttributeName.View);
-            return attribute;
+            Console.WriteLine(value);
+            Console.WriteLine(((IClass)value).Name);
+            throw new Exception("КАК ПОЧСИТАЛ ЭТО ЭТИМ");
         }
 
-        public override string ToString() => $"{ObjectName}.{AttributeName}";
+        public override string ToString() => $"{Value}.{AttributeName}";
     }
 
     public sealed class NewObjectExpression : IExpression
@@ -580,7 +596,13 @@ namespace VovaScript
 
         public object Evaluated()
         {
-            IClass classObject = Objects.GetClass(ClassName.View).Clone();
+            IClass classObject;
+            object got = Objects.GetVariable(ClassName.View);
+            if (got is IClass)
+                classObject = ((IClass)got).Clone();
+            else
+                throw new VovaScriptException($"ПЕРЕМЕННАЯ <{got} НЕ ЯВЛЯЕТСЯ КЛАССОМ ИЛИ ОБЪЕКТОМ>");
+
             foreach (IStatement assignment in Assignments)
             {
                 if (assignment is AssignStatement)
@@ -594,7 +616,7 @@ namespace VovaScript
                 {
                     DeclareFunctionStatement method = assignment as DeclareFunctionStatement;
                     method.Execute();
-                    IFunction function = ((IClass)Objects.GetVariable(method.Name.View)).Clone();
+                    UserFunction function = ((IClass)Objects.GetVariable(method.Name.View)).Clone().Body as UserFunction;
                     Objects.DeleteVariable(method.Name.View);
                     classObject.AddAttribute(method.Name.View, new IClass(method.Name.View, new Dictionary<string, object>(), function));
                     continue;

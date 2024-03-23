@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
-using System.Net.Http.Headers;
 
 namespace VovaScript
 {
@@ -54,7 +53,7 @@ namespace VovaScript
         {
             Token sliced = Current;
             Consume(TokenType.VARIABLE);
-            Consume(TokenType.LCUBSCOB);
+            Consume(TokenType.LCUBSCOB, TokenType.LEFTSCOB);
             IExpression from = Expression();
             if (Match(TokenType.COLON))
             {
@@ -78,9 +77,9 @@ namespace VovaScript
 
         private IExpression Listy()
         {
-            Consume(TokenType.LCUBSCOB);
+            Consume(TokenType.LCUBSCOB, TokenType.LEFTSCOB);
             List<IExpression> items = new List<IExpression>();
-            while (!Match(TokenType.RCUBSCOB))
+            while (!Match(TokenType.RCUBSCOB, TokenType.RIGHTSCOB))
             {
                 items.Add(Expression());
                 Match(TokenType.COMMA, TokenType.SEMICOLON);
@@ -163,6 +162,7 @@ namespace VovaScript
                 if (next.Type == TokenType.LEFTSCOB )
                     return FuncParsy();
 
+                /*
                 if (next.Type == TokenType.DOT)
                     if (Get(2).Type == TokenType.VARIABLE)
                         if (Get(3).Type == TokenType.LEFTSCOB)
@@ -171,6 +171,7 @@ namespace VovaScript
                             return Attributy();
                     else
                         throw new Exception($"НЕДОПУСТИМОЕ СЛОВО ДЛЯ МЕТОДА ИЛИ АТРИБУТА: <{Get(2)}>");
+                */
             }
 
             if (Match(TokenType.SELECT))
@@ -210,8 +211,30 @@ namespace VovaScript
                 Consume(TokenType.VARIABLE);
                 return result;
             }
-
+            return (IExpression)Statement();
             throw new Exception($"НЕВОЗМОЖНОЕ МАТЕМАТИЧЕСКОЕ ВЫРАЖЕНИЕ: <{current}>\nПОЗИЦИЯ: ЛИНИЯ<{line}> СИМВОЛ<{position}>");
+        }
+
+        private IExpression Doty()
+        {
+            IExpression result = Primary();
+            while (true)
+            {
+                if (Match(TokenType.DOT))
+                {
+                    Token attr = Consume(Current.Type);
+                    if (Match(TokenType.LEFTSCOB))
+                    {
+                        throw new Exception("ТЫ ДАУН ЕЩЕ НЕ СДЕЛАЛ ПАРСИНГ МЕТОДОВ");
+                        //method = чететототам
+                        continue;
+                    }
+                    result = new AttributeExpression(result, attr);
+                    continue;
+                }
+                break;
+            }
+            return result;
         }
 
         private IExpression Unary()
@@ -230,11 +253,11 @@ namespace VovaScript
                     }
                     break;
                 }
-                return sign < 0 ? new UnaryExpression(current, Primary()) : Primary();
+                return sign < 0 ? new UnaryExpression(current, Doty()) : Doty();
             }
             if (Match(TokenType.MINUS, TokenType.PLUS))
-                return new UnaryExpression(current, Primary());
-            return Primary();
+                return new UnaryExpression(current, Doty());
+            return Doty();
         }
 
         private IExpression Powy()
@@ -358,6 +381,7 @@ namespace VovaScript
                 if (Match(TokenType.AND))
                 {
                     result = new CmpExpression(result, current, Booly());
+                    continue;
                 }
                 break;
             }
@@ -373,6 +397,7 @@ namespace VovaScript
                 if (Match(TokenType.OR))
                 {
                     result = new CmpExpression(result, current, Andy());
+                    continue;
                 }
                 break;
             }

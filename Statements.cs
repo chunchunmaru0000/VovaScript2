@@ -60,7 +60,24 @@ namespace VovaScript
             {
                 IClass classObject = value as IClass;
                 Result = classObject.Clone();
-                Console.WriteLine(Convert.ToString(classObject.ContainsAttribute("строкой") ? ((IClass)classObject.GetAttribute("строкой")).Body.Execute() : classObject));
+                if (classObject.ContainsAttribute("строкой"))
+                {
+                    object strokoi = classObject.GetAttribute("строкой");
+                    if (strokoi is IClass)
+                        if (!(((IClass)strokoi).Body is null))
+                            Console.WriteLine(((IClass)strokoi).Body.Execute());
+                        else
+                            Console.WriteLine(classObject);
+                    else
+                        Console.WriteLine(classObject);
+                }
+                else
+                    Console.WriteLine(classObject);
+            }
+            else if (value is string)
+            {
+                Console.WriteLine('"' + Convert.ToString(value) + '"');
+                Result = value;
             }
             else
             {
@@ -157,6 +174,8 @@ namespace VovaScript
         public List<IStatement> Statements;
 
         public BlockStatement() => Statements = new List<IStatement>();
+
+        public BlockStatement(List<IStatement> statements) => Statements = statements;
 
         public void Execute()
         {
@@ -665,7 +684,7 @@ namespace VovaScript
                 }
                 throw new Exception($"НЕДОПУСТИМОЕ ВЫРАЖЕНИЕ ДЛЯ ОБЬЯВЛЕНИЯ В КЛАССЕ: <{TypePrint.Pyc(statement)}> С ТЕЛОМ {statement}");
             }
-            Objects.AddClass(newClass.Name, newClass);
+            Objects.AddVariable(newClass.Name, newClass);
         }
 
         public object Evaluated()
