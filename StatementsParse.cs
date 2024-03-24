@@ -92,8 +92,7 @@ namespace VovaScript
                     Sep();
                 }
                 IStatement body = OneOrBlock();
-                throw new Exception($"СДЕЛАЙ МЕТОДЫ ЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭ");
-               // return new MethodAssignStatement(objName, attrs.ToArray(), args.ToArray(), body);
+                return new MethodAssignStatement(objName, attrs.ToArray(), args.ToArray(), body);
             }
             throw new Exception($"ДАННОЕ СЛОВО НЕ МОЖЕТ БЫТЬ ИСПОЛЬЗОВАННО В КАЧЕСТВЕ НАЗВАНИЯ ДЛЯ МЕТОДА ИЛИ АТТРИБУТА: {objName}.<{string.Join(".", attrs)}>");
         }

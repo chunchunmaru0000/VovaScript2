@@ -1,6 +1,8 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 
 namespace VovaScript
@@ -706,7 +708,6 @@ namespace VovaScript
     public sealed class AttributeAssignStatement : IStatement, IExpression
     {
         public Token ObjName;
-        public Token AttributeName;
         public Token[] Attributes;
         public IExpression Value;
         public object Result;
@@ -718,10 +719,8 @@ namespace VovaScript
             Value = value;
         }
 
-        //public IStatement Clone() => new AttributeAssignStatement(ObjName.Clone(), AttributeName.Clone(), Value.Clon());
         public IStatement Clone() => new AttributeAssignStatement(ObjName.Clone(), Attributes.Select(a => a.Clone()).ToArray(), Value.Clon());
 
-        //public IExpression Clon() => new AttributeAssignStatement(ObjName.Clone(), AttributeName.Clone(), Value.Clon());
         public IExpression Clon() => new AttributeAssignStatement(ObjName.Clone(), Attributes.Select(a => a.Clone()).ToArray(), Value.Clon());
 
         public void Execute() 
@@ -774,37 +773,81 @@ namespace VovaScript
             return Result is IClass ? ((IClass)Result).Clone() : Result;
         }
         
-        public override string ToString() => $"{ObjName}.{AttributeName} = {Value};";
+        public override string ToString() => $"{ObjName}.{PrintStatement.ListString(Attributes.Select(a => (object)a).ToList())} = {Value}";
     }
 
     public sealed class MethodAssignStatement : IStatement, IExpression
     {
-        public Token ObjectName;
-        public Token MethodName;
+        public Token ObjName;
+        public Token[] Attributes;
         public Token[] Args;
         public IStatement Body;
+        public object Result;
 
-        public MethodAssignStatement(Token objectName, Token methodName, Token[] args, IStatement body)
+        public MethodAssignStatement(Token objectName, Token[] attrs, Token[] args, IStatement body)
         {
-            ObjectName = objectName;
-            MethodName = methodName;
+            ObjName = objectName;
+            Attributes = attrs;
             Args = args;
             Body = body;
         }
 
-        public IStatement Clone() => new MethodAssignStatement(ObjectName.Clone(), MethodName.Clone(), Args.Select(a => a.Clone()).ToArray(), Body.Clone());
+        public IStatement Clone() => new MethodAssignStatement(ObjName.Clone(), Attributes.Select(a => a.Clone()).ToArray(), Args.Select(a => a.Clone()).ToArray(), Body.Clone());
 
-        public IExpression Clon() => new MethodAssignStatement(ObjectName.Clone(), MethodName.Clone(), Args.Select(a => a.Clone()).ToArray(), Body.Clone());
+        public IExpression Clon() => new MethodAssignStatement(ObjName.Clone(), Attributes.Select(a => a.Clone()).ToArray(), Args.Select(a => a.Clone()).ToArray(), Body.Clone());
 
-        public void Execute() => (Objects.GetVariable(ObjectName.View) as IClass).AddAttribute(MethodName.View, new IClass(MethodName.View, new Dictionary<string, object>(), new UserFunction(Args, Body)));
+        //   public void Execute() => (Objects.GetVariable(ObjectName.View) as IClass).AddAttribute(MethodName.View, new IClass(MethodName.View, new Dictionary<string, object>(), new UserFunction(Args, Body)));
+
+        public void Execute()
+        {
+            if (Objects.ContainsVariable(ObjName.View))
+            {
+                object got = Objects.GetVariable(ObjName.View);
+                if (got is IClass)
+                {
+                    IClass classObject = got as IClass;
+                    IClass last = null;
+                    for (int i = 0; i < Attributes.Length - 1; i++)
+                    {
+                        if (classObject.ContainsAttribute(Attributes[i].View))
+                        {
+                            got = classObject.GetAttribute(Attributes[i].View);
+                            last = classObject;
+                            if (got is IClass)
+                            {
+                                classObject = got as IClass;
+                                continue;
+                            }
+                            if (i == Attributes.Length - 1)
+                            {
+                                Result = new IClass(Attributes[i].View, new Dictionary<string, object>(), new UserFunction(Args, Body));
+                                last.AddAttribute(Attributes[i].View, Result);
+                                return;
+                            }
+                            throw new Exception($"НЕ ОБЪЕКТ: <{Attributes[i]}> ГДЕ-ТО В <{ObjName}>");
+                        }
+                        if (i == Attributes.Length - 1)
+                        {
+                            Result = new IClass(Attributes[i].View, new Dictionary<string, object>(), new UserFunction(Args, Body));
+                            classObject.AddAttribute(Attributes[i].View, Result);
+                            return;
+                        }
+                        throw new Exception($"НЕСУЩЕСТВУЮЩИЙ КАК ОБЪЕКТ: <{Attributes[i]}> ГДЕ-ТО В <{ObjName}>");
+                    }
+                    Result = new IClass(Attributes.Last().View, new Dictionary<string, object>(), new UserFunction(Args, Body));
+                    classObject.AddAttribute(Attributes.Last().View, Result);
+                    return;
+                }
+            }
+            throw new Exception($"НЕСУЩЕСТВУЮЩИЙ КАК ОБЪЕКТ: <{ObjName}>");
+        }
 
         public object Evaluated()
         {
             Execute();
-            object attribute = (Objects.GetVariable(ObjectName.View) as IClass).GetAttribute(MethodName.View);
-            return attribute is IClass ? ((IClass)attribute).Clone() : attribute;
+            return Result is IClass ? ((IClass)Result).Clone() : Result;
         }
 
-        public override string ToString() => $"{ObjectName}.{MethodName} => ({string.Join("|", Args.Select(a => a.View))}) {Body};";
+        public override string ToString() => $"{ObjName}.{PrintStatement.ListString(Attributes.Select(a => (object)a).ToList())} => ({string.Join("|", Args.Select(a => a.View))}) {Body}";
     }
 }
