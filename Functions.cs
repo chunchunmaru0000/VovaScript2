@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -80,7 +81,10 @@ namespace VovaScript
                 if (got is IClass)
                     method = ((IClass)got).Body as UserFunction;
                 else
-                    throw new Exception($"НЕ ЯВЛЯЕТСЯ МЕТОДОМ: <{got}>");
+                {
+                    Console.WriteLine("ДА ПОЧЕМУ ОНО СЮДА ВЕДЕТ");
+                    throw new Exception($"НЕ ЯВЛЯЕТСЯ МЕТОДОМ: <{got}> С ИМЕНЕМ <{MethodName.View}>");
+                }
 
                 FunctionExpression borrow = Borrow as FunctionExpression;
 
@@ -103,10 +107,48 @@ namespace VovaScript
                 foreach (var variable in Objects.Variables)
                     if (classObject.ContainsAttribute(variable.Key))
                         classObject.AddAttribute(variable.Key, variable.Value);
-
                 Objects.Pop();
                 return result;
             }
+            object value = got;
+            if (value is long)
+            {
+                IClass IInt = Objects.IInteger.Clone();
+                got = IInt.GetAttribute(MethodName.View);
+                if (got is IClass)
+                {
+                    IClass meth = got as IClass;
+                    if (meth.Body is UserFunction)
+                    {
+                        UserFunction userF = meth.Body as UserFunction;
+                         Objects.Push();
+                        FunctionExpression borrow = Borrow as FunctionExpression;
+                        List<object> args = borrow.Args.Select(a => a.Evaluated()).ToList();
+                        args.Insert(0, value);
+
+                        if (args.Count < userF.ArgsCount())
+                            throw new Exception($"НЕВЕРНОЕ КОЛИЧЕСТВО АРГУМЕНТОВ: БЫЛО<{args.Count}> ОЖИДАЛОСЬ<{userF.ArgsCount()}>");
+
+                        for (int i = 0; i < userF.ArgsCount(); i++)
+                        {
+                            string arg = userF.GetArgName(i);
+                            Objects.AddVariable(arg, args[i]);
+                        }
+                        object result = userF.Execute();
+                        Objects.Pop();
+                        return result;
+                    }
+                    return meth.Execute(new object[] { value });
+                }
+                throw new Exception($"МЕТОД <{MethodName}> ОКАЗАЛСЯ НЕ МЕТОДОМ А <{got}>");
+            }
+            if (value is string)
+            {
+                // return new IString((string)value).GetAttribute(AttributeName.View)
+                return value;
+            }
+            //throw new Exception($"КАК ПОЧСИТАЛ ЭТО ЭТИМ: <{value}>");
+            throw new Exception($"НЕ ЯВЛЯЕТСЯ МЕТОДОМ: <{got}> С ИМЕНЕМ <{MethodName.View}>");
             throw new Exception($"НЕ ЯВЛЯЕТСЯ МЕТОДОМ: <{got}>");
         }
 
@@ -128,7 +170,7 @@ namespace VovaScript
         public object Execute(object[] x)
         {
             if (x.Length == 0)
-                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ, БЫЛО: <{x.Length}>");
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
             return Math.Cos(Convert.ToDouble(x[0]));
         }
 
@@ -142,7 +184,7 @@ namespace VovaScript
         public object Execute(object[] x)
         {
             if (x.Length == 0)
-                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ, БЫЛО: <{x.Length}>");
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
             return Math.Ceiling(Convert.ToDouble(x[0]));
         }
 
@@ -156,7 +198,7 @@ namespace VovaScript
         public object Execute(object[] x)
         {
             if (x.Length == 0)
-                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ, БЫЛО: <{x.Length}>");
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
             return Math.Floor(Convert.ToDouble(x[0]));
         }
 
@@ -170,7 +212,7 @@ namespace VovaScript
         public object Execute(object[] x)
         {
             if (x.Length == 0)
-                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ, БЫЛО: <{x.Length}>");
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
             return Math.Tan(Convert.ToDouble(x[0]));
         }
 
@@ -184,7 +226,7 @@ namespace VovaScript
         public object Execute(object[] x)
         {
             if (x.Length == 0)
-                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ, БЫЛО: <{x.Length}>");
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
             return MoreMax(x);
             //throw new Exception($"С ДАННЫМИ ТИПАМИ ПЕРЕМЕННЫХ ДАННАЯ ФЕНКЦИЯ НЕВОЗМОЖНА: <{this}> <>");
         }
@@ -229,7 +271,7 @@ namespace VovaScript
         public object Execute(object[] x)
         {
             if (x.Length == 0)
-                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ, БЫЛО: <{x.Length}>");
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
             return LessMax(x);
             //throw new Exception($"С ДАННЫМИ ТИПАМИ ПЕРЕМЕННЫХ ДАННАЯ ФЕНКЦИЯ НЕВОЗМОЖНА: <{this}> <>");
         }
@@ -272,7 +314,7 @@ namespace VovaScript
         public object Execute(object[] x)
         {
             if (x.Length == 0)
-                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ, БЫЛО: <{x.Length}>");
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
             return Math.Sqrt(Convert.ToDouble(x[0]));
         }
 
@@ -286,7 +328,7 @@ namespace VovaScript
         public object Execute(object[] x)
         {
             if (x.Length == 0)
-                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ, БЫЛО: <{x.Length}>");
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
             string file = Convert.ToString(x[0]);
 
             if (x.Length >= 2 && Convert.ToString(x[1]) == "линии")
@@ -320,7 +362,7 @@ namespace VovaScript
         public object Execute(object[] x)
         {
             if (x.Length == 0)
-                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ, БЫЛО: <{x.Length}>");
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
             string stroka = Convert.ToString(x[0]);
 
             if (stroka.Length == 1) 
@@ -359,6 +401,8 @@ namespace VovaScript
     {
         public object Execute(object[] x)
         {
+            if (x.Length == 0)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
             if (x[0] is string)
                 return x[0];
             switch (x.Length)
@@ -381,6 +425,8 @@ namespace VovaScript
     {
         public object Execute(object[] x)
         {
+            if (x.Length == 0)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
             if (x[0] is long)
                 return x[0];
             try
@@ -407,6 +453,8 @@ namespace VovaScript
     {
         public object Execute(object[] x)
         {
+            if (x.Length == 0)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
             if (x[0] is double)
                 return x[0];
             try
@@ -434,7 +482,7 @@ namespace VovaScript
         public object Execute(object[] x)
         {
             if (x.Length < 3)
-                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ, БЫЛО: <{x.Length}>");
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
             string file = Convert.ToString(x[0]);
             string mode = Convert.ToString(x[1]);
             string data = Convert.ToString(x[2]);

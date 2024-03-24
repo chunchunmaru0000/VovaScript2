@@ -237,7 +237,7 @@ namespace VovaScript
             Attributes = attributes;
             Body = body;
         }
-        public object Execute(params object[] obj) => Body.Execute(obj);
+        public object Execute(params object[] obj) => Body is null ? throw new Exception($"НЕ ЯВЛЯЕТСЯ ОБЬЕКТОМ ДЛЯ ВЫЗОВА: <{Name}>") : Body.Execute(obj);
         
         public IClass Clone() => new IClass(Name, new Dictionary<string, object>(Attributes), Body is null ? null : Body.Cloned());
 
@@ -267,12 +267,12 @@ namespace VovaScript
                 if (strokoi is IClass)
                     if (!(((IClass)strokoi).Body is null))
                         return Convert.ToString(((IClass)strokoi).Body.Execute());
-                    else
-                        return $"<ОБЬЕКТ КЛАССА {Name}>";
-                else
-                    return $"<ОБЬЕКТ КЛАССА {Name}>";
+           //         else
+           //             return $"<ОБЬЕКТ КЛАССА {Name}>";
+           //     else
+           //         return $"<ОБЬЕКТ КЛАССА {Name}>";
             }
-            else
+          //  else
                 return $"<ОБЬЕКТ КЛАССА {Name}>";
         }
     }
@@ -298,23 +298,9 @@ namespace VovaScript
 
         /*        TYPES              */
 
-        public static IClass IInteger = new IClass("asdf", new Dictionary<string, object>
+        public static IClass IInteger = new IClass("ЯЧисло", new Dictionary<string, object>
         {
-            { "строкой", new IClass("__строкой__", new Dictionary<string, object>(),
-                new UserFunction
-                (
-                    new Token[]{new Token()},
-                    new BlockStatement
-                    (
-                        new List<IStatement>()
-                        {
-                            new ReturnStatement
-                            (
-                                new NumExpression(10)
-                            )
-                        }
-                    )
-                )) }
+            { "строкой", new IClass("__строкой__", new Dictionary<string, object>(), Stringing.Cloned()) },
         });
 
         /*        VARIABLES          */
@@ -322,7 +308,7 @@ namespace VovaScript
         public static Stack<Dictionary<string, object>> Registers = new Stack<Dictionary<string, object>>();
         public static Dictionary<string, object> Variables = new Dictionary<string, object>()
         {
-            { "Число", IInteger },
+            { "ЯЧисло", IInteger },
             { "ПИ", Math.PI },
             { "Е", Math.E },
             { "ИСПБД", "негр" },

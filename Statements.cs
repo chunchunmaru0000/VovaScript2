@@ -1,8 +1,6 @@
-﻿using Newtonsoft.Json.Linq;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 
 namespace VovaScript
@@ -795,8 +793,6 @@ namespace VovaScript
         public IStatement Clone() => new MethodAssignStatement(ObjName.Clone(), Attributes.Select(a => a.Clone()).ToArray(), Args.Select(a => a.Clone()).ToArray(), Body.Clone());
 
         public IExpression Clon() => new MethodAssignStatement(ObjName.Clone(), Attributes.Select(a => a.Clone()).ToArray(), Args.Select(a => a.Clone()).ToArray(), Body.Clone());
-
-        //   public void Execute() => (Objects.GetVariable(ObjectName.View) as IClass).AddAttribute(MethodName.View, new IClass(MethodName.View, new Dictionary<string, object>(), new UserFunction(Args, Body)));
 
         public void Execute()
         {

@@ -411,7 +411,7 @@ namespace VovaScript
             }
             else
             {
-                throw new Exception($"НЕСУЩЕСТВУЮЩАЯ ФУНКЦИЯ ХОТЯ БЫ СЕЙЧАС: <{Name.View}>");
+              //  throw new Exception($"НЕСУЩЕСТВУЮЩАЯ ФУНКЦИЯ ХОТЯ БЫ СЕЙЧАС: <{Name.View}>");
                 throw new NotImplementedException("СДЕЛАЙ МЕТОД а вообще это не реально");
             }
         }
@@ -538,14 +538,7 @@ namespace VovaScript
     public sealed class AttributeExpression : IExpression
     {
         IExpression Value;
-        Token ObjectName;
         Token AttributeName;
-
-        public AttributeExpression(Token objectName, Token attributeName)
-        {
-            ObjectName = objectName;
-            AttributeName = attributeName;
-        }
 
         public AttributeExpression(IExpression value, Token attributeName)
         {
@@ -564,19 +557,18 @@ namespace VovaScript
                 object attribute = classObject.GetAttribute(AttributeName.View);
                 return attribute;
             }
+            
             if (value is long)
             {
-                throw new Exception("КАК ПОЧСИТАЛ ЭТО ЧИСЛОМ");
+                IClass IInt = Objects.IInteger.Clone();
+                return IInt.GetAttribute(AttributeName.View);
             }
             if (value is string)
             {
                 // return new IString((string)value).GetAttribute(AttributeName.View)
                 return value;
             }
-
-            Console.WriteLine(value);
-            Console.WriteLine(((IClass)value).Name);
-            throw new Exception("КАК ПОЧСИТАЛ ЭТО ЭТИМ");
+            throw new Exception($"КАК ПОЧСИТАЛ ЭТО ЭТИМ: <{value}>");
         }
 
         public override string ToString() => $"{Value}.{AttributeName}";
