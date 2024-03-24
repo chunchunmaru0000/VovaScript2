@@ -2,8 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
-using System.Security.AccessControl;
+
 
 namespace VovaScript
 {
@@ -230,7 +229,7 @@ namespace VovaScript
         public IStatement Classy()
         {
             Token className = Consume(TokenType.VARIABLE);
-            if (Current.Type == TokenType.LCUBSCOB || Current.Type == TokenType.LEFTSCOB)
+            if (Current.Type == TokenType.LTRISCOB || Current.Type == TokenType.LEFTSCOB)
             {
                 IStatement body = OneOrBlock();
                 return new DeclareClassStatement(className, body);

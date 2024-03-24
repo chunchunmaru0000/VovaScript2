@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -95,7 +94,7 @@ namespace VovaScript
                 // attrs
                 foreach (var attribute in classObject.Attributes)
                     Objects.AddVariable(attribute.Key, attribute.Value);
-                // attrs
+                // args
                 for (int i = 0; i < method.ArgsCount(); i++)
                 {
                     string arg = method.GetArgName(i);
@@ -121,7 +120,7 @@ namespace VovaScript
                     if (meth.Body is UserFunction)
                     {
                         UserFunction userF = meth.Body as UserFunction;
-                         Objects.Push();
+                        Objects.Push();
                         FunctionExpression borrow = Borrow as FunctionExpression;
                         List<object> args = borrow.Args.Select(a => a.Evaluated()).ToList();
                         args.Insert(0, value);
@@ -147,9 +146,7 @@ namespace VovaScript
                 // return new IString((string)value).GetAttribute(AttributeName.View)
                 return value;
             }
-            //throw new Exception($"КАК ПОЧСИТАЛ ЭТО ЭТИМ: <{value}>");
             throw new Exception($"НЕ ЯВЛЯЕТСЯ МЕТОДОМ: <{got}> С ИМЕНЕМ <{MethodName.View}>");
-            throw new Exception($"НЕ ЯВЛЯЕТСЯ МЕТОДОМ: <{got}>");
         }
 
         public override string ToString() => $"{ObjectName}.{Borrow}";

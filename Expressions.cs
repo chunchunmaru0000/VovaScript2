@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -85,6 +86,71 @@ namespace VovaScript
         {
             object lft = Left.Evaluated();
             object rght = Right.Evaluated();
+            if (lft is IClass || rght is IClass)
+            { 
+                if (!(lft is IClass) || !(rght is IClass))
+                    throw new Exception("ДВОИЧНЫЕ ДЕЙСТВИЯ МОЖНО ДЕЛАТЬ ТОЛЬКО МЕЖДУ ДВУМЯ ОБЪЕКТАМИ А НЕ ОБЪЕКТОМ И ЧЕМ ЛИБО ЕЩЕ");
+                IClass leftObject = lft as IClass;
+                string method;
+                switch (Operation.Type)
+                {
+                    case TokenType.PLUS:
+                        method = "_плюс";
+                        break;
+                    case TokenType.MINUS:
+                        method = "_минус";
+                        break;
+                    case TokenType.MULTIPLICATION:
+                        method = "_умножить";
+                        break;
+                    case TokenType.DIVISION:
+                        method = "_делить";
+                        break;
+                    case TokenType.POWER:
+                        method = "_степень";
+                        break;
+                    case TokenType.MOD:
+                        method = "_остаток";
+                        break;
+                    case TokenType.DIV:
+                        method = "_безостаточный";
+                        break;
+                    default:
+                        throw new Exception($"НЕПОДДЕРЖИВАЕМАЯ БИНАРНАЯ ОПЕРАЦИЯ ДЛЯ ДАННЫХ ОБЪЕКТОВ: {lft} {Operation.Type} {rght} | {Left} {Operation} {Right}");
+                }
+                object got;
+                if (leftObject.ContainsAttribute(method))
+                    got = leftObject.GetAttribute(method);
+                else
+                    throw new Exception($"В ОБЪЕКТЕ <{Left}> НЕТУ МЕТОДА <{method}>");
+                if (got is IClass)
+                {
+                    IClass meth = got as IClass;
+                    if (meth.Body is UserFunction)
+                    { 
+                        UserFunction userF = meth.Body as UserFunction;
+                        if (userF.ArgsCount() < 1)
+                            throw new Exception($"ДЛЯ ДАННОГО МАГИЧАСКОГО МЕТОДА <УМНОЖЕНИЕ> НУЖЕН ХОТЯ БЫ ОДИН АРГУМЕНТ");
+                        Objects.Push();
+                        // attrs
+                        foreach (var attribute in leftObject.Attributes)
+                            Objects.AddVariable(attribute.Key, attribute.Value);
+                        // arg
+                        Objects.AddVariable(userF.Args[0].View, rght);
+                        // execute
+                        object result = userF.Execute();
+                        // restore
+                        foreach (var variable in Objects.Variables)
+                            if (leftObject.ContainsAttribute(variable.Key))
+                                leftObject.AddAttribute(variable.Key, variable.Value);
+                        Objects.Pop();
+                        return result;
+                    }
+                    throw new Exception("СОННА ВАКЕ НАЙ");
+                    // return meth.Execute(new object[] { rght });
+                }
+                throw new Exception($"МЕТОД <{Left}> ОКАЗАЛСЯ НЕ МЕТОДОМ А <{got}>");
+            }
             if (lft is string || rght is string)
             {
                 string slft = lft is bool ? (bool)lft ? "Истина" : "Ложь" : Convert.ToString(lft);
@@ -594,7 +660,7 @@ namespace VovaScript
             if (got is IClass)
                 classObject = ((IClass)got).Clone();
             else
-                throw new VovaScriptException($"ПЕРЕМЕННАЯ <{got} НЕ ЯВЛЯЕТСЯ КЛАССОМ ИЛИ ОБЪЕКТОМ>");
+                throw new Exception($"ПЕРЕМЕННАЯ <{got} НЕ ЯВЛЯЕТСЯ КЛАССОМ ИЛИ ОБЪЕКТОМ>");
 
             foreach (IStatement assignment in Assignments)
             {

@@ -74,7 +74,8 @@ namespace VovaScript
                    type == TokenType.FUNCTION   ||
                    type == TokenType.NOW        ||
                    type == TokenType.LCUBSCOB   ||
-                   type == TokenType.SELECT     ;
+                   type == TokenType.SELECT     ||
+                   type == TokenType.NEW        ;
         }
 
         private bool Match(TokenType type)

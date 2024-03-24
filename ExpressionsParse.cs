@@ -194,7 +194,7 @@ namespace VovaScript
                 Consume(TokenType.VARIABLE);
                 return result;
             }
-            return (IExpression)Statement();
+         //   return (IExpression)Statement();
             throw new Exception($"НЕВОЗМОЖНОЕ МАТЕМАТИЧЕСКОЕ ВЫРАЖЕНИЕ: <{current}>\nПОЗИЦИЯ: ЛИНИЯ<{line}> СИМВОЛ<{position}>");
         }
 

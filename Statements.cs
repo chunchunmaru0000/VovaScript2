@@ -506,8 +506,8 @@ namespace VovaScript
 
         public void Execute()
         {
-            ((List<object>)List.Evaluated())[Convert.ToInt32(Index.Evaluated())] = Expression.Evaluated();
             Console.WriteLine("Я НЕ УВЕРЕН ЧТО ОН ПРИСВАИВАЕТ ТАК КАК РАНЬШЕ ОНО ПРИСВАИВАЛЬСЯ ПО ИМЕНИ ПЕРЕМЕННОЙ А СЕЙЧАС Я ХОТЕЛ ПРОВЕРИТЬ ЕСЛИ ОБЬЕКТ БУДЕТ ССЫЛОЧНЫМ И ПОЫЕЗЕТ И ЕГО ЭЛЕМЕНТ ИЗМЕНИТСЯ");
+            ((List<object>)List.Evaluated())[Convert.ToInt32(Index.Evaluated())] = Expression.Evaluated();
         }
 
         public object Evaluated()
