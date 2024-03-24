@@ -114,39 +114,56 @@ namespace VovaScript
             {
                 IClass IInt = Objects.IInteger.Clone();
                 got = IInt.GetAttribute(MethodName.View);
-                if (got is IClass)
-                {
-                    IClass meth = got as IClass;
-                    if (meth.Body is UserFunction)
-                    {
-                        UserFunction userF = meth.Body as UserFunction;
-                        Objects.Push();
-                        FunctionExpression borrow = Borrow as FunctionExpression;
-                        List<object> args = borrow.Args.Select(a => a.Evaluated()).ToList();
-                        args.Insert(0, value);
-
-                        if (args.Count < userF.ArgsCount())
-                            throw new Exception($"НЕВЕРНОЕ КОЛИЧЕСТВО АРГУМЕНТОВ: БЫЛО<{args.Count}> ОЖИДАЛОСЬ<{userF.ArgsCount()}>");
-
-                        for (int i = 0; i < userF.ArgsCount(); i++)
-                        {
-                            string arg = userF.GetArgName(i);
-                            Objects.AddVariable(arg, args[i]);
-                        }
-                        object result = userF.Execute();
-                        Objects.Pop();
-                        return result;
-                    }
-                    return meth.Execute(new object[] { value });
-                }
-                throw new Exception($"МЕТОД <{MethodName}> ОКАЗАЛСЯ НЕ МЕТОДОМ А <{got}>");
             }
-            if (value is string)
+            else if (value is string)
             {
-                // return new IString((string)value).GetAttribute(AttributeName.View)
-                return value;
+                IClass IStr = Objects.IString.Clone();
+                got = IStr.GetAttribute(MethodName.View);
             }
-            throw new Exception($"НЕ ЯВЛЯЕТСЯ МЕТОДОМ: <{got}> С ИМЕНЕМ <{MethodName.View}>");
+            else if (value is double)
+            {
+                IClass IFlt = Objects.IFloat.Clone();
+                got = IFlt.GetAttribute(MethodName.View);
+            }
+            else if (value is bool)
+            {
+                IClass IBol = Objects.IBool.Clone();
+                got = IBol.GetAttribute(MethodName.View);
+            }
+            else if (value is List<object>)
+            {
+                IClass ILst = Objects.IList.Clone();
+                got = ILst.GetAttribute(MethodName.View);
+            }
+            else
+                throw new Exception($"НЕ ЯВЛЯЕТСЯ МЕТОДОМ: <{got}> С ИМЕНЕМ <{MethodName.View}>");
+
+            if (got is IClass)
+            {
+                IClass meth = got as IClass;
+                if (meth.Body is UserFunction)
+                {
+                    UserFunction userF = meth.Body as UserFunction;
+                    Objects.Push();
+                    FunctionExpression borrow = Borrow as FunctionExpression;
+                    List<object> args = borrow.Args.Select(a => a.Evaluated()).ToList();
+                    args.Insert(0, value);
+
+                    if (args.Count < userF.ArgsCount())
+                        throw new Exception($"НЕВЕРНОЕ КОЛИЧЕСТВО АРГУМЕНТОВ: БЫЛО<{args.Count}> ОЖИДАЛОСЬ<{userF.ArgsCount()}>");
+
+                    for (int i = 0; i < userF.ArgsCount(); i++)
+                    {
+                        string arg = userF.GetArgName(i);
+                        Objects.AddVariable(arg, args[i]);
+                    }
+                    object result = userF.Execute();
+                    Objects.Pop();
+                    return result;
+                }
+                return meth.Execute(new object[] { value });
+            }
+            throw new Exception($"МЕТОД <{MethodName}> ОКАЗАЛСЯ НЕ МЕТОДОМ А <{got}>");
         }
 
         public override string ToString() => $"{ObjectName}.{Borrow}";
@@ -407,9 +424,13 @@ namespace VovaScript
                 case 0:
                     return "";
                 case 1:
-                    return x[0] is bool ? (bool)x[0] ? "Истина" : "Ложь" : Convert.ToString(x[0]);
+                    return x[0] is bool ? (bool)x[0] ? "Истина" : "Ложь"
+                         : x[0] is List<object> ? (object)PrintStatement.ListString((List<object>)x[0])
+                         : Convert.ToString(x[0]);
                 default:
-                    return x.Select(s => s is bool ? (bool)s ? (object)"Истина" : (object)"Ложь" : (object)Convert.ToString(s)).ToList();
+                    return x.Select(s => s is bool ? (bool)s ? (object)"Истина" : (object)"Ложь" 
+                                       : s is List<object> ? (object)PrintStatement.ListString((List<object>)s) 
+                                       : (object)Convert.ToString(s)).ToList();
             }
         }
 
@@ -433,9 +454,11 @@ namespace VovaScript
                     case 0:
                         return 0;
                     case 1:
-                        return Convert.ToInt64(x[0]);
+                        return x[0] is bool ? (bool)x[0] ? (object)1 : (object)0 : Convert.ToInt64(x[0]);
                     default:
-                        return x.Select(s => s is string ? (object)Int64.Parse((string)s) : (object)Convert.ToInt64(s)).ToList();
+                        return x.Select(s => s is string ? (object)Int64.Parse((string)s) 
+                                           : s is bool ? (bool)s ? (object)1 : (object)0
+                                           : (object)Convert.ToInt64(s)).ToList();
                 }
             }
             catch (Exception) { throw new Exception($"КОНВЕРТАЦИЯ НЕ УДАЛАСЬ: <{x[0]}>"); }
@@ -461,9 +484,11 @@ namespace VovaScript
                     case 0:
                         return 0;
                     case 1:
-                        return Convert.ToDouble(x[0]);
+                        return x[0] is bool ? (bool)x[0] ? 1 : 0 : Convert.ToDouble(x[0]);
                     default:
-                        return x.Select(s => s is string ? (object)double.Parse((string)s) : (object)Convert.ToDouble(s)).ToList();
+                        return x.Select(s => s is string ? (object)double.Parse((string)s)
+                                           : s is bool ? (bool)s ? (object)(double)1 : (object)(double)0
+                                           : (object)Convert.ToDouble(s)).ToList();
                 }
             }
             catch (Exception) { throw new Exception($"КОНВЕРТАЦИЯ НЕ УДАЛАСЬ: <{x[0]}>"); }

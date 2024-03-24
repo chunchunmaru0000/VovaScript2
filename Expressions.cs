@@ -631,8 +631,23 @@ namespace VovaScript
             }
             if (value is string)
             {
-                // return new IString((string)value).GetAttribute(AttributeName.View)
-                return value;
+                IClass IStr = Objects.IString.Clone();
+                return IStr.GetAttribute(AttributeName.View);
+            }
+            if (value is double)
+            {
+                IClass IFlt = Objects.IFloat.Clone();
+                return IFlt.GetAttribute(AttributeName.View);
+            }
+            if (value is bool)
+            {
+                IClass IBol = Objects.IBool.Clone();
+                return IBol.GetAttribute(AttributeName.View);
+            }
+            if (value is List<object>)
+            {
+                IClass ILst = Objects.IList.Clone();
+                return ILst.GetAttribute(AttributeName.View);
             }
             throw new Exception($"КАК ПОЧСИТАЛ ЭТО ЭТИМ: <{value}>");
         }

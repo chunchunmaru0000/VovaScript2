@@ -277,8 +277,10 @@ namespace VovaScript
         }
     }
 
-    public static class Objects
+    public static partial class Objects
     {
+
+        /*           BASED           */
 
         public static IClass Sinus = new IClass("синус", new Dictionary<string, object>(), new Sinus());
         public static IClass Cosinus = new IClass("косинус", new Dictionary<string, object>(), new Cosinus());
@@ -296,19 +298,17 @@ namespace VovaScript
         public static IClass Doubling = new IClass("точить", new Dictionary<string, object>(), new DoublingFunction());
         public static IClass Writing = new IClass("писать", new Dictionary<string, object>(), new WritingFileFunction());
 
-        /*        TYPES              */
-
-        public static IClass IInteger = new IClass("ЯЧисло", new Dictionary<string, object>
-        {
-            { "строкой", new IClass("__строкой__", new Dictionary<string, object>(), Stringing.Cloned()) },
-        });
-
         /*        VARIABLES          */
+
         public static object NOTHING = (long)0; // need improving i believe
         public static Stack<Dictionary<string, object>> Registers = new Stack<Dictionary<string, object>>();
         public static Dictionary<string, object> Variables = new Dictionary<string, object>()
         {
             { "ЯЧисло", IInteger },
+            { "ЯСтрока", IString },
+            { "ЯТочка", IFloat },
+            { "ЯПравда", IBool },
+
             { "ПИ", Math.PI },
             { "Е", Math.E },
             { "ИСПБД", "негр" },

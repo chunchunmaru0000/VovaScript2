@@ -56,6 +56,7 @@
     <Compile Include="Statements.cs" />
     <Compile Include="StatementsParse.cs" />
     <Compile Include="Tokenizator.cs" />
+    <Compile Include="TypesAttrs.cs" />
     <Compile Include="Worder.cs" />
   </ItemGroup>
   <ItemGroup>
