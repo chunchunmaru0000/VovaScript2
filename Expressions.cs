@@ -1,9 +1,7 @@
-﻿using Newtonsoft.Json.Linq;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
-using System.Reflection;
+
 
 namespace VovaScript
 {
@@ -151,7 +149,39 @@ namespace VovaScript
                 }
                 throw new Exception($"МЕТОД <{Left}> ОКАЗАЛСЯ НЕ МЕТОДОМ А <{got}>");
             }
-            if (lft is string || rght is string)
+            if (lft is string && rght is long)
+                switch (Operation.Type)
+                {
+                    case TokenType.MULTIPLICATION:
+                        string str = Convert.ToString(lft);
+                        string ret = "";
+                        for (long i = (long)rght; i > 0; i--)
+                            ret += str;
+                        return ret;
+                    case TokenType.PLUS:
+                        break;
+                    case TokenType.MINUS:
+                        break;
+                    default:
+                        break;
+                }
+            if (lft is long && rght is string)
+                switch (Operation.Type)
+                {
+                    case TokenType.MULTIPLICATION:
+                        string str = Convert.ToString(rght);
+                        string ret = "";
+                        for (long i = (long)lft; i > 0; i--)
+                            ret += str;
+                        return ret;
+                    case TokenType.PLUS:
+                        break;
+                    case TokenType.MINUS:
+                        break;
+                    default:
+                        break;
+                }
+            if (lft is string && rght is string)
             {
                 string slft = lft is bool ? (bool)lft ? "Истина" : "Ложь" : Convert.ToString(lft);
                 string srght = rght is bool ? (bool)rght ? "Истина" : "Ложь" : Convert.ToString(rght);
@@ -458,7 +488,7 @@ namespace VovaScript
                 if (Objects.GetVariable(Name.View) is IClass)
                     function = Objects.GetVariable(Name.View) as IClass;
                 else
-                    throw new Exception($"ДАННЫЙ ОБЬЕКТ НЕ ЯВЛЯЕТСЯ ФУНКЦИЕЙ <{function}>");
+                    throw new Exception($"ДАННЫЙ ОБЬЕКТ НЕ ЯВЛЯЕТСЯ ФУНКЦИЕЙ <{Name.View}>");
                 if (function.Body is UserFunction)
                 {
                     UserFunction userFunction = function.Body as UserFunction;
@@ -701,5 +731,29 @@ namespace VovaScript
         }
 
         public override string ToString() => $"НОВЫЙ {ClassName}({PrintStatement.ListString(Assignments.Select(a => (object)a.ToString()).ToList())})";
+    }
+
+    public sealed class LambdaExpression : IExpression
+    {
+        Token[] Args;
+        IExpression Ret;
+
+        public LambdaExpression(Token[] args, IExpression ret)
+        {
+            Args = args;
+            Ret = ret;
+        }
+
+        public IExpression Clon() => new LambdaExpression(Args.Select(a => a.Clone()).ToArray(), Ret.Clon());
+
+        public object Evaluated()
+        {
+            BlockStatement Body = new BlockStatement();
+            Body.AddStatement(new ReturnStatement(Ret));
+            IClass lambda = new IClass("лямбдой_был_создан", new Dictionary<string, object>(), new UserFunction(Args, Body));
+            return lambda;
+        }
+
+        public override string ToString() => $"ЛЯМБДА {PrintStatement.ListString(Args.Select(a => (object)a).ToList())}: {Ret}";
     }
 }

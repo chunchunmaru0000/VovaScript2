@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading;
 
 namespace VovaScript
@@ -723,6 +724,7 @@ namespace VovaScript
 
         public void Execute() 
         {
+            object a = Objects.Variables;
             if (Objects.ContainsVariable(ObjName.View))
             {
                 object got = Objects.GetVariable(ObjName.View);
@@ -845,5 +847,62 @@ namespace VovaScript
         }
 
         public override string ToString() => $"{ObjName}.{PrintStatement.ListString(Attributes.Select(a => (object)a).ToList())} => ({string.Join("|", Args.Select(a => a.View))}) {Body}";
+    }
+
+    public sealed class LoopStatement : IStatement, IExpression
+    {
+        IStatement Statement;
+
+        public LoopStatement(IStatement statement) => Statement = statement;
+
+
+        public IStatement Clone() => new LoopStatement(Statement.Clone());
+
+        public IExpression Clon() => new LoopStatement(Statement.Clone());
+
+        public void Execute()
+        {
+            while (true)
+            {
+                try
+                {
+                    Statement.Execute();
+                }
+                catch (BreakStatement)
+                {
+                    break;
+                }
+                catch (ContinueStatement)
+                {
+                    // continue by itself
+                }
+            }
+        }
+
+        public object Evaluated()
+        {
+            while (true)
+            {
+                try
+                {
+                    Statement.Execute();
+                }
+                catch (BreakStatement)
+                {
+                    break;
+                }
+                catch (ContinueStatement)
+                {
+                    // continue by itself
+                }
+                catch (ReturnStatement result)
+                {
+                    return result.GetResult();
+                }
+            }
+            throw new Exception($"ЕСЛИ ИСПОЛЬЗОВАТЬ ТАК СТРУКТУРУ <{this}> ТО НАДО ЧТО-ТО ВЕРНУТЬ");
+        }
+
+        public override string ToString() => $"цикл: {{{Statement}}}";
     }
 }

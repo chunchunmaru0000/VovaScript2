@@ -123,6 +123,18 @@ namespace VovaScript
             return new SQLSelectExpression(selections, ats, aliases, froms, condition.ToArray());
         }
 
+        private IExpression Lambdy()
+        {
+            List<Token> args = new List<Token>();
+            while (!Match(TokenType.COLON))
+            {
+                args.Add(Consume(TokenType.VARIABLE));
+                Sep();
+            }
+            IExpression ret = Expression();
+            return new LambdaExpression(args.ToArray(), ret);
+        }
+
         private IExpression Primary()
         {
             Token current = Current;
@@ -144,18 +156,10 @@ namespace VovaScript
 
                 if (next.Type == TokenType.LEFTSCOB )
                     return FuncParsy();
-
-                /*
-                if (next.Type == TokenType.DOT)
-                    if (Get(2).Type == TokenType.VARIABLE)
-                        if (Get(3).Type == TokenType.LEFTSCOB)
-                            return Methody();
-                        else
-                            return Attributy();
-                    else
-                        throw new Exception($"НЕДОПУСТИМОЕ СЛОВО ДЛЯ МЕТОДА ИЛИ АТРИБУТА: <{Get(2)}>");
-                */
             }
+
+            if (Match(TokenType.ARROW, TokenType.LAMBDA))
+                return Lambdy();
 
             if (Match(TokenType.SELECT))
                 return SQLy();
@@ -194,7 +198,7 @@ namespace VovaScript
                 Consume(TokenType.VARIABLE);
                 return result;
             }
-         //   return (IExpression)Statement();
+            return (IExpression)Statement();
             throw new Exception($"НЕВОЗМОЖНОЕ МАТЕМАТИЧЕСКОЕ ВЫРАЖЕНИЕ: <{current}>\nПОЗИЦИЯ: ЛИНИЯ<{line}> СИМВОЛ<{position}>");
         }
 

@@ -51,14 +51,6 @@ namespace VovaScript
         public IExpression Borrow;
         public IExpression Pool;
 
-        public MethodExpression(Token objectName, Token methodName, IExpression borrow, IClass pool = null)
-        {
-            ObjectName = objectName;
-            MethodName = methodName;
-            Borrow = borrow;
-           // Pool = pool;
-        }
-
         public MethodExpression(IExpression pool, Token methodName, IExpression borrow)
         {
             Pool = pool;
@@ -66,7 +58,7 @@ namespace VovaScript
             Borrow = borrow;
         }
 
-        public IExpression Clon() => new MethodExpression(ObjectName.Clone(), MethodName.Clone(), Borrow.Clon());
+        public IExpression Clon() => new MethodExpression(Pool.Clon(), MethodName.Clone(), Borrow.Clon());
 
         public object Evaluated()
         {
@@ -250,12 +242,17 @@ namespace VovaScript
         public static object MoreMax(object[] x)
         {
             int I = 0;
+            if (x[0] is List<object>)
+                x = ((List<object>)x[0]).ToArray();
             double max = Convert.ToDouble(x[I]);
+
             for (int i = 0; i < x.Length; i++)
             {
                 double iterable;
                 if (x[i] is string)
                     iterable = ((string)x[i]).Length;
+                else if (x[i] is List<object>)
+                    iterable = ((List<object>)x[i]).Count;
                 else if (x[i] is bool)
                     iterable = (bool)x[i] ? 1 : 0;
                 else
@@ -270,10 +267,10 @@ namespace VovaScript
                 return max;
             if (x[I] is long)
                 return Convert.ToInt64(max);
-            if (x[I] is string)
-                return Convert.ToInt64(((string)x[I]).Length);
-            if (x[I] is bool)
-                return (bool)x[I] ? 1 : 0;
+            if (x[I] is List<object>)
+                return Convert.ToInt64(((List<object>)x[I]).Count);
+            if (x[I] is string || x[I] is bool)
+                return x[I];
             throw new Exception($"ЭТОГО ПРОСТО НЕ МОЖЕТ БЫТЬ: <{x[I]}> <{TypePrint.Pyc(x[I])}>");
         }
 
@@ -295,12 +292,17 @@ namespace VovaScript
         private object LessMax(object[] x)
         {
             int I = 0;
+            if (x[0] is List<object>)
+                x = ((List<object>)x[0]).ToArray();
             double min = Convert.ToDouble(x[I]);
+
             for (int i = 0; i < x.Length; i++)
             {
                 double iterable;
                 if (x[i] is string)
                     iterable = ((string)x[i]).Length;
+                else if (x[i] is List<object>)
+                    iterable = ((List<object>)x[i]).Count;
                 else if (x[i] is bool)
                     iterable = (bool)x[i] ? 1 : 0;
                 else
@@ -315,6 +317,8 @@ namespace VovaScript
                 return min;
             if (x[I] is long)
                 return Convert.ToInt64(min);
+            if (x[I] is List<object>)
+                return Convert.ToInt64(((List<object>)x[I]).Count);
             if (x[I] is string || x[I] is bool)
                 return x[I];
             throw new Exception($"ЭТОГО ПРОСТО НЕ МОЖЕТ БЫТЬ: <{x[I]}> <{TypePrint.Pyc(x[I])}>");
@@ -394,6 +398,21 @@ namespace VovaScript
         public override string ToString() => $"РАЗДЕЛ(<>)";
     }
 
+    public sealed class WriteNotLn : IFunction
+    {
+        public object Execute(object[] x)
+        {
+            if (x.Length == 0)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+            Console.Write(string.Join(" ", x));
+            return Objects.NOTHING;
+        }
+
+        public IFunction Cloned() => new WriteNotLn();
+
+        public override string ToString() => $"ВВОД(<>)";
+    }
+
     public sealed class InputFunction : IFunction
     {
         public object Execute(object[] x)
@@ -451,14 +470,12 @@ namespace VovaScript
             {
                 switch (x.Length)
                 {
-                    case 0:
-                        return 0;
                     case 1:
-                        return x[0] is bool ? (bool)x[0] ? (object)1 : (object)0 : Convert.ToInt64(x[0]);
+                        return x[0] is bool ? (bool)x[0] ? (object)1 : (object)0 : Int64.Parse(Convert.ToString(x[0]));
                     default:
                         return x.Select(s => s is string ? (object)Int64.Parse((string)s) 
                                            : s is bool ? (bool)s ? (object)1 : (object)0
-                                           : (object)Convert.ToInt64(s)).ToList();
+                                           : (object)Int64.Parse(Convert.ToString(s))).ToList();
                 }
             }
             catch (Exception) { throw new Exception($"КОНВЕРТАЦИЯ НЕ УДАЛАСЬ: <{x[0]}>"); }

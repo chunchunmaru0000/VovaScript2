@@ -23,6 +23,8 @@ namespace VovaScript
         CLASS,
         [StringValue("ЭТОТ")]
         THIS,
+        [StringValue("ЛЯМБДА")]
+        LAMBDA,
 
         //operators
         [StringValue("ПЛЮС")]
@@ -131,6 +133,8 @@ namespace VovaScript
         WORD_PRINT,
         [StringValue("ДЛЯ")]
         WORD_FOR,
+        [StringValue("ЦИКЛ")]
+        LOOP,
         [StringValue("ИСТИНА")]
         WORD_TRUE,
         [StringValue("ЛОЖЬ")]
@@ -282,6 +286,10 @@ namespace VovaScript
 
         /*           BASED           */
 
+        // system
+        public static IClass WriteWithoutSlashN = new IClass("очерк", new Dictionary<string, object>(), new WriteNotLn());
+        public static IClass Input = new IClass("ввод", new Dictionary<string, object>(), new InputFunction());
+        // math
         public static IClass Sinus = new IClass("синус", new Dictionary<string, object>(), new Sinus());
         public static IClass Cosinus = new IClass("косинус", new Dictionary<string, object>(), new Cosinus());
         public static IClass Ceiling = new IClass("потолок", new Dictionary<string, object>(), new Ceiling());
@@ -290,32 +298,79 @@ namespace VovaScript
         public static IClass Max = new IClass("максимум", new Dictionary<string, object>(), new Max());
         public static IClass Min = new IClass("минимум", new Dictionary<string, object>(), new Min());
         public static IClass Square = new IClass("корень", new Dictionary<string, object>(), new Square());
-        public static IClass ReadAll = new IClass("вычитать", new Dictionary<string, object>(), new ReadAllFileFunction());
+        // io
+        public static IClass ReadAllFile = new IClass("вычитать", new Dictionary<string, object>(), new ReadAllFileFunction());
+        public static IClass WritingFile = new IClass("писать", new Dictionary<string, object>(), new WritingFileFunction());
+        // methods
         public static IClass Split = new IClass("раздел", new Dictionary<string, object>(), new SplitFunction());
-        public static IClass Input = new IClass("ввод", new Dictionary<string, object>(), new InputFunction());
+        // to type
         public static IClass Stringing = new IClass("строчить", new Dictionary<string, object>(), new StringingFunction());
         public static IClass Inting = new IClass("числить", new Dictionary<string, object>(), new IntingFunction());
         public static IClass Doubling = new IClass("точить", new Dictionary<string, object>(), new DoublingFunction());
-        public static IClass Writing = new IClass("писать", new Dictionary<string, object>(), new WritingFileFunction());
+
+        /*           TYPES           */
+
+        public static IClass IInteger = new IClass("ЯЧисло", new Dictionary<string, object>
+        {
+            { "числом", new IClass("_числом", new Dictionary<string, object>(), Inting.Cloned()) },
+            { "строкой", new IClass("_строкой", new Dictionary<string, object>(), Stringing.Cloned()) },
+            { "точкой", new IClass("_точкой", new Dictionary<string, object>(), Doubling.Cloned()) },
+            { "потолок", new IClass("_потолок", new Dictionary<string, object>(), Ceiling.Cloned()) },
+            { "пол", new IClass("_пол", new Dictionary<string, object>(), Floor.Cloned()) },
+        });
+
+        public static IClass IFloat = new IClass("ЯТочка", new Dictionary<string, object>
+        {
+            { "числом", new IClass("_числом", new Dictionary<string, object>(), Inting.Cloned()) },
+            { "строкой", new IClass("_строкой", new Dictionary<string, object>(), Stringing.Cloned()) },
+            { "точкой", new IClass("_точкой", new Dictionary<string, object>(), Doubling.Cloned()) },
+            { "потолок", new IClass("_потолок", new Dictionary<string, object>(), Ceiling.Cloned()) },
+            { "пол", new IClass("_пол", new Dictionary<string, object>(), Floor.Cloned()) },
+        });
+
+        public static IClass IString = new IClass("ЯСтрока", new Dictionary<string, object>
+        {
+            { "числом", new IClass("_числом", new Dictionary<string, object>(), Inting.Cloned()) },
+            { "строкой", new IClass("_строкой", new Dictionary<string, object>(), Stringing.Cloned()) },
+            { "точкой", new IClass("_точкой", new Dictionary<string, object>(), Doubling.Cloned()) },
+        });
+
+        public static IClass IBool = new IClass("ЯПравда", new Dictionary<string, object>
+        {
+            { "числом", new IClass("_числом", new Dictionary<string, object>(), Inting.Cloned()) },
+            { "строкой", new IClass("_строкой", new Dictionary<string, object>(), Stringing.Cloned()) },
+            { "точкой", new IClass("_точкой", new Dictionary<string, object>(), Doubling.Cloned()) },
+        });
+
+        public static IClass IList = new IClass("ЯЛист", new Dictionary<string, object>
+        {
+            { "строкой", new IClass("_строкой", new Dictionary<string, object>(), Stringing.Cloned()) },
+            { "мин", new IClass("_минимум", new Dictionary<string, object>(), Min.Cloned()) },
+            { "макс", new IClass("_максимум", new Dictionary<string, object>(), Max.Cloned()) },
+        });
 
         /*        VARIABLES          */
 
         public static object NOTHING = (long)0; // need improving i believe
         public static Stack<Dictionary<string, object>> Registers = new Stack<Dictionary<string, object>>();
-        public static Dictionary<string, object> Variables = new Dictionary<string, object>()
+        public static  Dictionary<string, object> Variables = new Dictionary<string, object>()
         {
             { "ЯЧисло", IInteger },
             { "ЯСтрока", IString },
             { "ЯТочка", IFloat },
             { "ЯПравда", IBool },
+            { "ЯЛист", IList },
+
+            { "очерк", WriteWithoutSlashN },
 
             { "ПИ", Math.PI },
             { "Е", Math.E },
-            { "ИСПБД", "негр" },
+            { "ИСПБД", "дада" },
             { "синус", Sinus },
             { "косинус", Cosinus },
             { "потолок", Ceiling },
-            { "заземь", Floor },
+            { "заземь", Floor.Clone() },
+            { "пол", Floor.Clone() },
             { "тангенс", Tan },
             { "макс",  Max.Clone() },
             { "большее",  Max.Clone() },
@@ -326,17 +381,20 @@ namespace VovaScript
             { "минимум",  Min.Clone() },
             { "наименьшее",  Min.Clone() },
             { "корень",  Square },
-            { "вычитать",  ReadAll },
-            { "раздел",  Split },
+
             { "ввод",  Input.Clone() },
             { "хартия",  Input.Clone() },
             { "ввести",  Input.Clone() },
             { "харатья",  Input.Clone() },
+
+            { "раздел",  Split },
             { "строчить",  Stringing },
             { "числить",  Inting },
             { "точить",  Doubling },
-            { "писать",  Writing.Clone() },
-            { "летописить",  Writing.Clone() },
+
+            { "вычитать",  ReadAllFile },
+            { "писать",  WritingFile.Clone() },
+            { "летописить",  WritingFile.Clone() },
         };
 
         public static bool ContainsVariable(string key) => Variables.ContainsKey(key);

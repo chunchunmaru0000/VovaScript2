@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 
 namespace VovaScript
 {
@@ -71,6 +72,9 @@ namespace VovaScript
 
                 case "для":
                     word.Type = TokenType.WORD_FOR;
+                    return word;
+                case "цикл":
+                    word.Type = TokenType.LOOP;
                     return word;
 
                 case "начертать":
@@ -146,6 +150,9 @@ namespace VovaScript
                 case "пояти":
                     word.Type = TokenType.RETURN;
                     return word;
+                case "славить":
+                    word.Type = TokenType.RETURN;
+                    return word;
                 case "яти":
                     word.Type = TokenType.RETURN;
                     return word;
@@ -164,6 +171,13 @@ namespace VovaScript
                     return word;
                 case "процедуру":
                     word.Type = TokenType.PROCEDURE;
+                    return word;
+
+                case "лямбда":
+                    word.Type = TokenType.LAMBDA;
+                    return word;
+                case "функция":
+                    word.Type = TokenType.LAMBDA;
                     return word;
 
                 case "сейчас":
@@ -244,6 +258,7 @@ namespace VovaScript
                 case "где":
                     word.Type = TokenType.WHERE;
                     return word;
+
                 default:
                     word.Type = TokenType.VARIABLE;
                     return word;

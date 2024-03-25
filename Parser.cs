@@ -179,11 +179,15 @@ namespace VovaScript
             if (Match(TokenType.WORD_FOR))
                 return Fory();
 
+            if (Match(TokenType.LOOP))
+                return new LoopStatement(OneOrBlock());
+
             if (Match(TokenType.CLEAR))
                 return Cleary();
 
             if (Match(TokenType.SLEEP))
                 return Sleepy();
+
 
             if (Match(TokenType.WORD_PRINT))
                 return Printy();
@@ -191,7 +195,7 @@ namespace VovaScript
             if (Printble(current.Type))
                 return Printy();
 
-            if (current.Type == TokenType.COLON || current.Type == TokenType.LTRISCOB)
+            if (current.Type == TokenType.COLON || current.Type == TokenType.LTRISCOB || current.Type == TokenType.LEFTSCOB)
                 return OneOrBlock();
 
             if (Sep())

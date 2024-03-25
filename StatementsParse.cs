@@ -252,10 +252,10 @@ namespace VovaScript
             Consume(TokenType.TABLE);
             IExpression tableName = Expression();
 
-            Match(TokenType.LTRISCOB);
+            Match(TokenType.LTRISCOB, TokenType.LEFTSCOB);
             List<Token> types = new List<Token>();
             List<Token> names = new List<Token>();
-            while (!Match(TokenType.RTRISCOB))
+            while (!Match(TokenType.RTRISCOB, TokenType.LEFTSCOB))
             {
                 Token current = Current;
                 if (Match(TokenType.COMMA))
