@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 
-
 namespace VovaScript
 {
     public sealed class NumExpression : IExpression
