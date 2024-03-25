@@ -24,24 +24,34 @@ namespace VovaScript
 
         private Token Get(int offset)
         {
-            if (position + offset < lenght)
+            if (position + offset < lenght && position + offset > -1)
                 return tokens[position + offset];
             return tokens.Last();
         }
 
         private Token Current => Get(0);
 
-        private string Near(int range) => string.Join("|", Enumerable.Range(-range, range*2).Select(g => Get(g).View));
+        private string Near(int range)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.Write(string.Join("|", Enumerable.Range(-range, range).Select(g => Get(g).View)));
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write('|' + Current.View + '|');
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine(string.Join("|", Enumerable.Range(1, range).Select(g => Get(g).View)));
+            Console.ResetColor();
+            return "";
+        }
 
         private Token Consume(TokenType type)
         {
             Token current = Current;
             if (Current.Type != type)
-                throw new Exception($"ТОКЕН НЕ СОВПАДАЕТ С ОЖИДАЕМЫМ\n" +
+                throw new Exception($"{Near(6)}" + 
+                                    $"СЛОВО НЕ СОВПАДАЕТ С ОЖИДАЕМЫМ\n" +
                                     $"ОЖИДАЛСЯ: <{type.GetStringValue()}>\n" +
                                     $"ТЕКУЩИЙ: <{Current.Type.GetStringValue()}>\n" +
-                                    $"ПОЗИЦИЯ: КОМАНДА<{line}> СЛОВО<{position}>\n" +
-                                    $"{Near(3)}");
+                                    $"ПОЗИЦИЯ: КОМАНДА<{line}> СЛОВО<{position}>");
             position++;
             return current;
         }
@@ -50,11 +60,11 @@ namespace VovaScript
         {
             Token current = Current;
             if (Current.Type != type0 && Current.Type != type1)
-                throw new Exception($"ТОКЕН НЕ СОВПАДАЕТ С ОЖИДАЕМЫМ\n" +
+                throw new Exception($"{Near(6)}" + 
+                                    $"СЛОВО НЕ СОВПАДАЕТ С ОЖИДАЕМЫМ\n" +
                                     $"ОЖИДАЛСЯ: <{type0.GetStringValue()}> ИЛИ <{type1.GetStringValue()}>\n" +
                                     $"ТЕКУЩИЙ: <{Current.Type.GetStringValue()}>\n" +
-                                    $"ПОЗИЦИЯ: КОМАНДА<{line}> СЛОВО<{position}>\n" +
-                                    $"{Near(3)}");
+                                    $"ПОЗИЦИЯ: КОМАНДА<{line}> СЛОВО<{position}>");
             position++;
             return current;
         }
@@ -114,7 +124,6 @@ namespace VovaScript
             line++;
             Token current = Current;
             Token next = Get(1);
-            Token next2 = Get(2);
 
             if (current.Type == TokenType.CREATE)
             {
@@ -202,7 +211,7 @@ namespace VovaScript
                 return Nothing;
 
             try { Console.ForegroundColor = ConsoleColor.Red; Console.WriteLine($"{Get(-1)}; {current}; {next};"); Console.ResetColor(); } catch (Exception) { }
-            throw new Exception($"НЕИЗВЕСТНОЕ ДЕЙСТВИЕ: {current}\nПОЗИЦИЯ: ДЕЙСТВИЕ<{line}> СЛОВО<{position}>");
+            throw new Exception($"{Near(6)}НЕИЗВЕСТНОЕ ДЕЙСТВИЕ: {current}\nПОЗИЦИЯ: ДЕЙСТВИЕ<{line}> СЛОВО<{position}>");
         }
 
         private IStatement Block()

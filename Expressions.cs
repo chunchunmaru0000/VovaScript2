@@ -525,83 +525,6 @@ namespace VovaScript
         public override string ToString() => $"СЕЙЧАС<{Time}>";
     }
 
-    public sealed class ListTakeExpression : IExpression
-    {
-        public Token Arr;
-        public IExpression From;
-        public IExpression To = null;
-
-        public ListTakeExpression(Token arr, IExpression from, IExpression to)
-        {
-            Arr = arr;
-            From = from;
-            To = to;
-        }
-
-        public IExpression Clon() => new ListTakeExpression(Arr.Clone(), From.Clon(), To is null ? null : To.Clon());
-
-        public string SliceString(string Slice)
-        {
-            try
-            {
-                int from = Convert.ToInt32(From.Evaluated());
-                int to = 0;
-                if (To != null)
-                    to = Convert.ToInt32(To.Evaluated());
-                int length = Slice.Length;
-                if (from < 0)
-                    from = length + from + 1;
-                if (To != null)
-                {
-                    if (to < 0)
-                        to = length + to + 1;
-                    return Slice.Substring(from, to - from);
-                }
-                return Slice[from] + "";
-            }
-            catch (Exception)
-            {
-                int from = Convert.ToInt32(From.Evaluated());
-                int to = Convert.ToInt32(To.Evaluated());
-                throw new Exception($"НЕКОРРЕКТНЫЕ ИНДЕКСЫ: ОТ <{from}> ДО <{to}> С ДЛИНОЙ <{to - from}>");
-            }
-        }
-
-        public object Evaluated()
-        {
-            if (Arr.Type == TokenType.STRING)
-                return SliceString(Arr.View);
-
-            object sliced = Objects.GetVariable(Arr.View);
-            if (sliced is string)
-                return SliceString(Convert.ToString(sliced));
-
-            int from = Convert.ToInt32(From.Evaluated());
-            int to = 0;
-            if (To != null)
-                to = Convert.ToInt32(To.Evaluated());
-            List<object> arr = (List<object>)sliced;
-
-            int length = arr.Count;
-            if (from < 0)
-                from = length + from + 1;
-            if (To != null)
-            {
-                if (to < 0)
-                    to = length + to + 1;
-                return arr.Skip(from).Take(to - from).ToList();
-            }
-            return arr[from];
-        }
-
-        public override string ToString()
-        {
-            int from = Convert.ToInt32(From.Evaluated());
-            int to = Convert.ToInt32(To.Evaluated());
-            return $"{Arr.View}[{from}" + to??"" + "]";
-        }
-    }
-
     public sealed class ListExpression : IExpression
     {
         public List<IExpression> Items;
@@ -610,13 +533,7 @@ namespace VovaScript
 
         public IExpression Clon() => new ListExpression(Items.Select(i => i.Clon()).ToList());
 
-        public object Evaluated()
-        {
-            List<object> items = new List<object>(Items.Count);
-            foreach (IExpression expression in Items)
-                items.Add(expression.Evaluated());
-            return items;
-        }
+        public object Evaluated() => Items.Select(i => i.Evaluated()).ToList();
 
         public override string ToString() => $"СПИСОК[{PrintStatement.ListString(Items.Select(i => (object)i).ToList())}]";
     }
@@ -754,5 +671,174 @@ namespace VovaScript
         }
 
         public override string ToString() => $"ЛЯМБДА {PrintStatement.ListString(Args.Select(a => (object)a).ToList())}: {Ret}";
+    }
+
+    public sealed class ListTakeExpression : IExpression
+    {
+        public Token Arr;
+        public IExpression From;
+        public IExpression To = null;
+
+        public ListTakeExpression(Token arr, IExpression from, IExpression to)
+        {
+            Arr = arr;
+            From = from;
+            To = to;
+        }
+
+        public IExpression Clon() => new ListTakeExpression(Arr.Clone(), From.Clon(), To is null ? null : To.Clon());
+
+        public string SliceString(string Slice)
+        {
+            try
+            {
+                int from = Convert.ToInt32(From.Evaluated());
+                int to = 0;
+                if (To != null)
+                    to = Convert.ToInt32(To.Evaluated());
+                int length = Slice.Length;
+                if (from < 0)
+                    from = length + from + 1;
+                if (To != null)
+                {
+                    if (to < 0)
+                        to = length + to + 1;
+                    return Slice.Substring(from, to - from);
+                }
+                return Slice[from] + "";
+            }
+            catch (Exception)
+            {
+                int from = Convert.ToInt32(From.Evaluated());
+                int to = Convert.ToInt32(To.Evaluated());
+                throw new Exception($"НЕКОРРЕКТНЫЕ ИНДЕКСЫ: ОТ <{from}> ДО <{to}> С ДЛИНОЙ <{to - from}>");
+            }
+        }
+
+        public object Evaluated()
+        {
+            if (Arr.Type == TokenType.STRING)
+                return SliceString(Arr.View);
+
+            object sliced = Objects.GetVariable(Arr.View);
+            if (sliced is string)
+                return SliceString(Convert.ToString(sliced));
+
+            int from = Convert.ToInt32(From.Evaluated());
+            int to = 0;
+            if (To != null)
+                to = Convert.ToInt32(To.Evaluated());
+            List<object> arr = (List<object>)sliced;
+
+            int length = arr.Count;
+            if (from < 0)
+                from = length + from + 1;
+            if (To != null)
+            {
+                if (to < 0)
+                    to = length + to + 1;
+                return arr.Skip(from).Take(to - from).ToList();
+            }
+            return arr[from];
+        }
+
+        public override string ToString()
+        {
+            int from = Convert.ToInt32(From.Evaluated());
+            int to = Convert.ToInt32(To.Evaluated());
+            return $"{Arr.View}[{from}" + to??"" + "]";
+        }
+    }
+
+    public sealed class SliceExpression : IExpression 
+    {
+        IExpression Taken;
+        IExpression From;
+        IExpression To;
+
+        public SliceExpression(IExpression taken, IExpression from, IExpression to = null)
+        {
+            Taken = taken;
+            From = from;
+            To = to;
+        }
+
+        public IExpression Clon() => new SliceExpression(Taken.Clon(), From.Clon(), To is null ? null : To.Clon());
+
+        public string SliceString(string Slice)
+        {
+            try
+            {
+                int length = Slice.Length;
+
+                int from = Convert.ToInt32(From.Evaluated());
+                int to = 0;
+                if (To != null)
+                {
+                    object got = To.Evaluated();
+                    if (got is string)
+                    {
+                        if ((string)got == "КОНЕЦ")
+                            to = length;
+                    }
+                     else
+                        to = Convert.ToInt32(To.Evaluated());
+                }
+
+                if (from < 0)
+                    from = length + from + 1;
+                if (To != null)
+                {
+                    if (to < 0)
+                        to = length + to + 1;
+                    return Slice.Substring(from, to - from);
+                }
+                return Slice[from] + "";
+            }
+            catch (Exception)
+            {
+                int from = Convert.ToInt32(From.Evaluated());
+                int to = Convert.ToInt32(To.Evaluated());
+                throw new Exception($"НЕКОРРЕКТНЫЕ ИНДЕКСЫ: ОТ <{from}> ДО <{to}> С ДЛИНОЙ <{to - from}> КОГДА У СТРОКИ <{Slice}> ДЛИНА <{Slice.Length}>");
+            }
+        }
+
+        public object Evaluated()
+        {
+            object taken = Taken.Evaluated();
+            if (taken is string)
+                return SliceString(Convert.ToString(taken));
+            if (!(taken is List<object>))
+                throw new Exception($"<{Taken}> НЕ БЫЛ ЛИСТОМ ИЛИ СТРОКОЙ, А <{taken}>");
+
+            List<object> arr = taken as List<object>;
+            int length = arr.Count;
+
+            int from = Convert.ToInt32(From.Evaluated());
+            int to = 0;
+            if (To != null)
+            {
+                object got = To.Evaluated();
+                if (got is string)
+                {
+                    if ((string)got == "КОНЕЦ")
+                        to = length;
+                }
+                else
+                    to = Convert.ToInt32(To.Evaluated());
+            }
+
+            if (from < 0)
+                from = length + from + 1;
+            if (To != null)
+            {
+                if (to < 0)
+                    to = length + to + 1;
+                return arr.Skip(from).Take(to - from).ToList();
+            }
+            return arr[from];
+        }
+
+        public override string ToString() => $"{Taken}[{From}" + To ?? "" + "]";
     }
 }

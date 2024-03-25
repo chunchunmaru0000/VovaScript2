@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
-
 
 namespace VovaScript
 {
@@ -56,6 +54,7 @@ namespace VovaScript
                 Sep();
                 return new ItemAssignStatement(new NumExpression(variable), index, value);
             }
+            Console.WriteLine("ItemAssigny ПАРАША");
             return new PrintStatement(new ListTakeExpression(variable, index, null));
         }
 
@@ -64,7 +63,6 @@ namespace VovaScript
             Token objName = Consume(TokenType.VARIABLE);
             Consume(TokenType.DOT);
             List<Token> attrs = new List<Token>();
-            //Token thingName = Consume(TokenType.VARIABLE);
             while (Current.Type != TokenType.ARROW && Current.Type != TokenType.DO_EQUAL)
             {
                 attrs.Add(Consume(TokenType.VARIABLE));
@@ -72,7 +70,7 @@ namespace VovaScript
                     if (Current.Type == TokenType.ARROW || Current.Type == TokenType.DO_EQUAL)
                         break;
                     else
-                        throw new Exception($"ОШИБКА СИНТАКИСА РЯДОМ С: {Near(6)}");
+                        throw new Exception($"{Near(6)}ОШИБКА СИНТАКИСА РЯДОМ С: {Current}");
             }
 
             if (Match(TokenType.DO_EQUAL))
@@ -93,7 +91,7 @@ namespace VovaScript
                 IStatement body = OneOrBlock();
                 return new MethodAssignStatement(objName, attrs.ToArray(), args.ToArray(), body);
             }
-            throw new Exception($"ДАННОЕ СЛОВО НЕ МОЖЕТ БЫТЬ ИСПОЛЬЗОВАННО В КАЧЕСТВЕ НАЗВАНИЯ ДЛЯ МЕТОДА ИЛИ АТТРИБУТА: {objName}.<{string.Join(".", attrs)}>");
+            throw new Exception($"{Near(6)}ДАННОЕ СЛОВО НЕ МОЖЕТ БЫТЬ ИСПОЛЬЗОВАННО В КАЧЕСТВЕ НАЗВАНИЯ ДЛЯ МЕТОДА ИЛИ АТТРИБУТА: {objName}.<{string.Join(".", attrs)}>");
         }
 
         private IStatement Printy()
@@ -234,7 +232,7 @@ namespace VovaScript
                 IStatement body = OneOrBlock();
                 return new DeclareClassStatement(className, body);
             }
-            throw new Exception("ОБЬЯВЛЕНИЕ ТЕЛА КЛАССА МОЖЕТ БЫТЬ ТОЛЬКО В СКОБКАХ");
+            throw new Exception($"{Near(6)}ОБЬЯВЛЕНИЕ ТЕЛА КЛАССА МОЖЕТ БЫТЬ ТОЛЬКО В СКОБКАХ");
         }
 
         public IStatement SQLCreateDatabasy()

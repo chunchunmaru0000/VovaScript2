@@ -1,14 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 
 namespace VovaScript
 {
     public partial class Parser
     {
+        private static Token Zero = new Token() { Type = TokenType.INTEGER, Value = 0, View = "0" };
+        private static Token End = new Token() { Type = TokenType.STRING, Value = "КОНЕЦ", View = "КОНЕЦ" };
+
         private IExpression FuncParsy()
         {
-            Token name = Consume(TokenType.FUNCTION, TokenType.VARIABLE);
+            Token name = Consume(TokenType.VARIABLE);
             Consume(TokenType.LEFTSCOB);
             FunctionExpression function = new FunctionExpression(name);
             while (!Match(TokenType.RIGHTSCOB))
@@ -32,35 +34,8 @@ namespace VovaScript
             return new NewObjectExpression(className, assigns.ToArray());
         }
 
-        private IExpression Slicy()
-        {
-            Token sliced = Current;
-            Consume(TokenType.VARIABLE);
-            Consume(TokenType.LCUBSCOB, TokenType.LEFTSCOB);
-            IExpression from = Expression();
-            if (Match(TokenType.COLON))
-            {
-                IExpression to = Expression();
-                Consume(TokenType.RCUBSCOB);
-                return new ListTakeExpression(sliced, from, to);
-            }
-        /*    if (Match(TokenType.COMMA, TokenType.SEMICOLON))
-            {
-                List<IExpression> indices = new List<IExpression>();
-                Consume(TokenType.COMMA, TokenType.SEMICOLON);
-                while(Current.Type != TokenType.RCUBSCOB)
-                {
-                    indices.Add(Expression());
-                }
-
-            }*/
-            Consume(TokenType.RCUBSCOB);
-            return new ListTakeExpression(sliced, from, null);
-        }
-
         private IExpression Listy()
         {
-            Consume(TokenType.LCUBSCOB, TokenType.LEFTSCOB);
             List<IExpression> items = new List<IExpression>();
             while (!Match(TokenType.RCUBSCOB, TokenType.RIGHTSCOB))
             {
@@ -83,7 +58,7 @@ namespace VovaScript
                 Consume(TokenType.RIGHTSCOB);
                 return new ShortIfExpression(result, pravda, nepravda);
             }
-            throw new NotImplementedException($"НЕВЕРНЫЙ СИНТАКСИС ГДЕ-ТО РЯДОМ С: {result}");
+            throw new NotImplementedException($"{Near(6)}НЕВЕРНЫЙ СИНТАКСИС ГДЕ-ТО РЯДОМ С: {result}");
         }
 
         private IExpression SQLy()
@@ -138,25 +113,12 @@ namespace VovaScript
         private IExpression Primary()
         {
             Token current = Current;
-            Token next = Get(1);
 
             if (Match(TokenType.NEW))
                 return Newy();
 
-            if (current.Type == TokenType.STRING)
-            {
-                if (next.Type == TokenType.LCUBSCOB)
-                   return Slicy();
-            }
-
-            if (current.Type == TokenType.VARIABLE)
-            {
-                if (next.Type == TokenType.LCUBSCOB)
-                    return Slicy();
-
-                if (next.Type == TokenType.LEFTSCOB )
-                    return FuncParsy();
-            }
+            if (current.Type == TokenType.VARIABLE && Get(1).Type == TokenType.LEFTSCOB)
+                return FuncParsy();
 
             if (Match(TokenType.ARROW, TokenType.LAMBDA))
                 return Lambdy();
@@ -167,10 +129,7 @@ namespace VovaScript
             if (Match(TokenType.ALL))
                 return All;
 
-            if (current.Type == TokenType.FUNCTION)
-                return FuncParsy();
-
-            if (current.Type == TokenType.LCUBSCOB)
+            if (Match(TokenType.LCUBSCOB))
                 return Listy();
 
             if (Match(TokenType.NOW))
@@ -190,7 +149,7 @@ namespace VovaScript
 
             if (Match(TokenType.VARIABLE))
                 return new VariableExpression(current);
-
+            // need improve
             if (Match(TokenType.PLUSPLUS, TokenType.MINUSMINUS))
             {
                 Token name = Current;
@@ -199,22 +158,11 @@ namespace VovaScript
                 return result;
             }
             return (IExpression)Statement();
-            throw new Exception($"НЕВОЗМОЖНОЕ МАТЕМАТИЧЕСКОЕ ВЫРАЖЕНИЕ: <{current}>\nПОЗИЦИЯ: ЛИНИЯ<{line}> СИМВОЛ<{position}>");
+            throw new Exception($"{Near(6)}НЕВОЗМОЖНОЕ МАТЕМАТИЧЕСКОЕ ВЫРАЖЕНИЕ: <{current}>\nПОЗИЦИЯ: ЛИНИЯ<{line}> СИМВОЛ<{position}>");
         }
-
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //                        ЗДЕСЬ ДОЛЖЕН БЫТЬ ПАРСИНГ СРЕЗОВ СТРОК И ЛИСТОВ А НЕ СВЕРХУ
-        //                        ЗДЕСЬ ДОЛЖЕН БЫТЬ ПАРСИНГ СРЕЗОВ СТРОК И ЛИСТОВ А НЕ СВЕРХУ
-        //                        ЗДЕСЬ ДОЛЖЕН БЫТЬ ПАРСИНГ СРЕЗОВ СТРОК И ЛИСТОВ А НЕ СВЕРХУ
-        //                        ЗДЕСЬ ДОЛЖЕН БЫТЬ ПАРСИНГ СРЕЗОВ СТРОК И ЛИСТОВ А НЕ СВЕРХУ
-        //                        ЗДЕСЬ ДОЛЖЕН БЫТЬ ПАРСИНГ СРЕЗОВ СТРОК И ЛИСТОВ А НЕ СВЕРХУ
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-        private IExpression Doty()
+        // 1000iq
+        // can be better if would be like in python [::2] something
+        private IExpression Aftery()
         {
             IExpression result = Primary();
             while (true)
@@ -231,6 +179,36 @@ namespace VovaScript
                     }
                     result = new AttributeExpression(result, attr);
                     continue;
+                }
+                if (Match(TokenType.LCUBSCOB))
+                {
+                    IExpression first;
+                    if (Current.Type == TokenType.COLON)
+                        first = new NumExpression(Zero);
+                    else
+                        first = Expression();
+
+                    if (Match(TokenType.COLON))
+                    {
+                        IExpression second;
+                        if (Match(TokenType.RCUBSCOB))
+                        {
+                            result = new SliceExpression(result, first, new NumExpression(End));
+                            continue;
+                        }
+                        else
+                            second = Expression();
+
+                        Consume(TokenType.RCUBSCOB);
+                        result = new SliceExpression(result, first, second);
+                        continue;
+                    }
+
+                    if (Match(TokenType.RCUBSCOB))
+                    {
+                        result = new SliceExpression(result, first);
+                        continue;
+                    }
                 }
                 break;
             }
@@ -253,11 +231,11 @@ namespace VovaScript
                     }
                     break;
                 }
-                return sign < 0 ? new UnaryExpression(current, Doty()) : Doty();
+                return sign < 0 ? new UnaryExpression(current, Aftery()) : Aftery();
             }
             if (Match(TokenType.MINUS, TokenType.PLUS))
-                return new UnaryExpression(current, Doty());
-            return Doty();
+                return new UnaryExpression(current, Aftery());
+            return Aftery();
         }
 
         private IExpression Powy()
