@@ -488,40 +488,6 @@ namespace VovaScript
         public override string ToString() => $"СОН({Ms})";
     }
 
-    public sealed class ItemAssignStatement : IStatement, IExpression
-    {
-        public IExpression List;
-        public IExpression Index;
-        public IExpression Expression;
-        public IClass Pool;
-
-        public ItemAssignStatement(IExpression list, IExpression index, IExpression expression, IClass pool = null)
-        {
-            List = list;
-            Index = index;
-            Expression = expression;
-            Pool = pool;
-        }
-
-        public IStatement Clone() => new ItemAssignStatement(List.Clon(), Index.Clon(), Expression.Clon(), Pool is null ? null : Pool.Clone());
-
-        public IExpression Clon() => new ItemAssignStatement(List.Clon(), Index.Clon(), Expression.Clon(), Pool is null ? null : Pool.Clone());
-
-        public void Execute()
-        {
-            Console.WriteLine("Я НЕ УВЕРЕН ЧТО ОН ПРИСВАИВАЕТ ТАК КАК РАНЬШЕ ОНО ПРИСВАИВАЛЬСЯ ПО ИМЕНИ ПЕРЕМЕННОЙ А СЕЙЧАС Я ХОТЕЛ ПРОВЕРИТЬ ЕСЛИ ОБЬЕКТ БУДЕТ ССЫЛОЧНЫМ И ПОЫЕЗЕТ И ЕГО ЭЛЕМЕНТ ИЗМЕНИТСЯ");
-            ((List<object>)List.Evaluated())[Convert.ToInt32(Index.Evaluated())] = Expression.Evaluated();
-        }
-
-        public object Evaluated()
-        {
-            Execute();
-            return List.Evaluated();
-        }
-
-        public override string ToString() => $"{List}[{Index.Evaluated()}] = {Expression.Evaluated()};";
-    }
-
     public sealed class OperationAssignStatement : IStatement, IExpression
     {
         public Token Variable;
