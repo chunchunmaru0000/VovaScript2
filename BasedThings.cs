@@ -155,6 +155,10 @@ namespace VovaScript
         SLEEP,
         [StringValue("РУСИТЬ")]
         VOVASCRIPT,
+        [StringValue("ТОЧНО")]
+        EXACTLY,
+        [StringValue("ЗАПОЛНИТЬ")]
+        FILL,
 
         //SQL
         [StringValue("СОЗДАТЬ")]

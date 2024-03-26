@@ -1,7 +1,4 @@
-﻿using System;
-using System.Net;
-
-namespace VovaScript
+﻿namespace VovaScript
 {
     static class Worder
     {
@@ -192,6 +189,15 @@ namespace VovaScript
                 case "русить":
                     word.Type = TokenType.VOVASCRIPT;
                     return word;
+                case "точно":
+                    word.Type = TokenType.EXACTLY;
+                    return word;
+                case "заполнить":
+                    word.Type = TokenType.FILL;
+                    return word;
+                case "заполни":
+                    word.Type = TokenType.FILL;
+                    return word;
 
                 /*           SQL           */
 
@@ -212,18 +218,18 @@ namespace VovaScript
                     word.Type = TokenType.TABLE;
                     return word;
 
-                case "строчка":
-                    word.Type = TokenType.STROKE;
-                    return word;
-                case "число":
-                    word.Type = TokenType.NUMBER;
-                    return word;
-                case "точка":
-                    word.Type = TokenType.FNUMBER;
-                    return word;
-                case "обманчивость":
-                    word.Type = TokenType.BUL;
-                    return word;
+                //case "строчка":
+                //    word.Type = TokenType.STROKE;
+                //   return word;
+                //case "число":
+                //    word.Type = TokenType.NUMBER;
+                //    return word;
+                //case "точка":
+                //    word.Type = TokenType.FNUMBER;
+                //    return word;
+                //case "обманчивость":
+                //    word.Type = TokenType.BUL;
+                //    return word;
                 case "все":
                     word.Type = TokenType.ALL;
                     return word;

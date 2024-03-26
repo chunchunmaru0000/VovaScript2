@@ -158,7 +158,6 @@ namespace VovaScript
             throw new Exception($"{Near(6)}НЕВОЗМОЖНОЕ МАТЕМАТИЧЕСКОЕ ВЫРАЖЕНИЕ: <{current}>\nПОЗИЦИЯ: ЛИНИЯ<{line}> СИМВОЛ<{position}>");
         }
         // 1000iq
-        // can be better if would be like in python [::2] something
         private IExpression Aftery()
         {
             IExpression result = Primary();
@@ -208,10 +207,7 @@ namespace VovaScript
                                 continue;
                             }
                             else
-                                if (Current.Type == TokenType.COLON)
-                                    third = null;
-                                else
-                                    third = Expression();
+                                third = Expression();
 
                             Consume(TokenType.RCUBSCOB);
                             result = new SliceExpression(result, first, second, third);

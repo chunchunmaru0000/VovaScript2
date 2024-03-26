@@ -150,13 +150,13 @@ namespace VovaScript
 
                 if (next.Type == TokenType.ARROW)
                     return Functiony();
-
-                if (next.Type == TokenType.LCUBSCOB)
-                    return ItemAssigny();
             }
 
             if (Match(TokenType.IN))
                 return AttMethody();
+
+            if (Match(TokenType.WHERE))
+                return ItemAssigny();
 
             if (current.Type == TokenType.PLUSPLUS || current.Type == TokenType.MINUSMINUS && next.Type == TokenType.VARIABLE)
                 return BeforeIncDecy();

@@ -673,83 +673,6 @@ namespace VovaScript
         public override string ToString() => $"ЛЯМБДА {PrintStatement.ListString(Args.Select(a => (object)a).ToList())}: {Ret}";
     }
 
-    public sealed class ListTakeExpression : IExpression
-    {
-        public Token Arr;
-        public IExpression From;
-        public IExpression To = null;
-
-        public ListTakeExpression(Token arr, IExpression from, IExpression to)
-        {
-            Arr = arr;
-            From = from;
-            To = to;
-        }
-
-        public IExpression Clon() => new ListTakeExpression(Arr.Clone(), From.Clon(), To is null ? null : To.Clon());
-
-        public string SliceString(string Slice)
-        {
-            try
-            {
-                int from = Convert.ToInt32(From.Evaluated());
-                int to = 0;
-                if (To != null)
-                    to = Convert.ToInt32(To.Evaluated());
-                int length = Slice.Length;
-                if (from < 0)
-                    from = length + from + 1;
-                if (To != null)
-                {
-                    if (to < 0)
-                        to = length + to + 1;
-                    return Slice.Substring(from, to - from);
-                }
-                return Slice[from] + "";
-            }
-            catch (Exception)
-            {
-                int from = Convert.ToInt32(From.Evaluated());
-                int to = Convert.ToInt32(To.Evaluated());
-                throw new Exception($"НЕКОРРЕКТНЫЕ ИНДЕКСЫ: ОТ <{from}> ДО <{to}> С ДЛИНОЙ <{to - from}>");
-            }
-        }
-
-        public object Evaluated()
-        {
-            if (Arr.Type == TokenType.STRING)
-                return SliceString(Arr.View);
-
-            object sliced = Objects.GetVariable(Arr.View);
-            if (sliced is string)
-                return SliceString(Convert.ToString(sliced));
-
-            int from = Convert.ToInt32(From.Evaluated());
-            int to = 0;
-            if (To != null)
-                to = Convert.ToInt32(To.Evaluated());
-            List<object> arr = (List<object>)sliced;
-
-            int length = arr.Count;
-            if (from < 0)
-                from = length + from + 1;
-            if (To != null)
-            {
-                if (to < 0)
-                    to = length + to + 1;
-                return arr.Skip(from).Take(to - from).ToList();
-            }
-            return arr[from];
-        }
-
-        public override string ToString()
-        {
-            int from = Convert.ToInt32(From.Evaluated());
-            int to = Convert.ToInt32(To.Evaluated());
-            return $"{Arr.View}[{from}" + to??"" + "]";
-        }
-    }
-
     public sealed class SliceExpression : IExpression 
     {
         IExpression Taken;
@@ -770,11 +693,11 @@ namespace VovaScript
                                                          To is null ? null : To.Clon(),
                                                          Step is null ? null : Step.Clon());
 
-        public static string SliceString(string Slice, int from, int to, object To)
+        public static int[] Sliced(object slice, int from, int to, object To)
         {
+            int length = slice is string ? Convert.ToString(slice).Length : ((List<object>)slice).Count;
             try
             {
-                int length = Slice.Length;
                 if (from < 0)
                     from = length + from + 1;
                 if (To is null)
@@ -783,48 +706,25 @@ namespace VovaScript
                 {
                     if (to < 0)
                         to = length + to;
-                    return Slice.Substring(from, to - from);
+                    return Enumerable.Range(from, to - from).ToArray();
                 }
-                return Slice[from] + "";
+                return new int[1] { from };
             }
             catch (Exception)
             {
-                throw new Exception($"НЕКОРРЕКТНЫЕ ИНДЕКСЫ: ОТ <{from}> ДО <{to}> С ДЛИНОЙ <{to - from}> КОГДА У СТРОКИ <{Slice}> ДЛИНА <{Slice.Length}>");
+                throw new Exception($"НЕКОРРЕКТНЫЕ ИНДЕКСЫ: ОТ <{from}> ДО <{to}> С ДЛИНОЙ <{to - from}> КОГДА У СТРОКИ <{slice}> ДЛИНА <{length}>");
             }
         }
 
-        public static object SliceList(List<object> arr, int from, int to, object To)
-        {
-            try
-            {
-                int length = arr.Count;
-                if (from < 0)
-                    from = length + from + 1;
-                if (To is null)
-                    to = length;
-                if (to != from)
-                {
-                    if (to < 0)
-                        to = length + to;
-                    return arr.Skip(from).Take(to - from).ToList();
-                }
-                return arr[from];
-            }
-            catch (Exception)
-            {
-                throw new Exception($"НЕКОРРЕКТНЫЕ ИНДЕКСЫ: ОТ <{from}> ДО <{to}> С ДЛИНОЙ <{to - from}> КОГДА У <{PrintStatement.ListString(arr)}> ДЛИНА <{arr.Count}>");
-            }
-        }
-
-        public static List<object> SelectStepped(List<object> arr, int step)
+        public static int[] SelectStepped(List<int> indeces, int step)
         {
             if (step < 0)
-                arr.Reverse();
-            List<object> newArr = new List<object>();
-            for (int i = 0; i < arr.Count; i++)
+                indeces.Reverse();
+            List<int> newArr = new List<int>();
+            for (int i = 0; i < indeces.Count; i++)
                 if (i % step == 0)
-                    newArr.Add(arr[i]);
-            return newArr;
+                    newArr.Add(indeces[i]);
+            return newArr.ToArray();
         }
 
         public static int DetermineIndex(IExpression index, int common = 0)
@@ -841,6 +741,10 @@ namespace VovaScript
             return common;
         }
 
+        public static List<object> Obj2List(object taken) => taken is string ?
+                                          Convert.ToString(taken).ToCharArray().Select(c => (object)Convert.ToString(c)).ToList() :
+                                          (List<object>)taken;
+
         public object Evaluated()
         {
             int from = DetermineIndex(From);
@@ -848,24 +752,19 @@ namespace VovaScript
             int step = DetermineIndex(Step, 1);
 
             object taken = Taken.Evaluated();
-            if (taken is string || taken is long || taken is double)
-                taken = SliceString(Convert.ToString(taken), from, to, To);
-            else
-            {
-                if (!(taken is List<object>))
-                    throw new Exception($"<{Taken}> НЕ БЫЛ ЛИСТОМ ИЛИ СТРОКОЙ, А <{taken}>");
-                taken = SliceList(taken as List<object>, from, to, To);
-            }
+            int[] indeces = taken is string || taken is long || taken is double ? Sliced(Convert.ToString(taken), from, to, To) :
+                            taken is List<object> ? Sliced(taken, from, to, To) :
+                            throw new Exception($"<{Taken}> НЕ БЫЛ ЛИСТОМ ИЛИ СТРОКОЙ, А <{taken}>");
+            indeces = SelectStepped(indeces.ToList(), step);
 
-            if (step == 1 || !(taken is List<object>) && !(taken is string) || taken is string && ((string)taken).Length < 2)
-                return taken;
+            List<object> beforeStep = Obj2List(taken);
+            //Console.WriteLine("indeces " + PrintStatement.ListString(indeces.Select(i => (object)i).ToList()));
+            //Console.WriteLine("items   " + PrintStatement.ListString(beforeStep.Select(i => (object)i).ToList()));
+            List<object> newArr = new List<object>();
+            foreach (int index in indeces)
+                newArr.Add(beforeStep[index]);
 
-            List<object> beforeStep = taken is string ? 
-                                          Convert.ToString(taken).ToCharArray().Select(c => (object)Convert.ToString(c)).ToList() : 
-                                          (List<object>)taken;
-
-            beforeStep = SelectStepped(beforeStep, step);
-            return beforeStep.All(b => b is string) ? (object)string.Join("", beforeStep) : beforeStep;
+            return newArr.All(b => b is string) ? (object)string.Join("", newArr) : newArr;
         }
 
         public override string ToString() => $"{Taken}[{From}:" + To ?? "" + ":" + Step ?? "" + "]";
