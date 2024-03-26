@@ -5,9 +5,6 @@ namespace VovaScript
 {
     public partial class Parser
     {
-        private static Token Zero = new Token() { Type = TokenType.INTEGER, Value = 0, View = "0" };
-        private static Token End = new Token() { Type = TokenType.STRING, Value = "КОНЕЦ", View = "КОНЕЦ" };
-
         private IExpression FuncParsy()
         {
             Token name = Consume(TokenType.VARIABLE);
@@ -184,7 +181,7 @@ namespace VovaScript
                 {
                     IExpression first;
                     if (Current.Type == TokenType.COLON)
-                        first = new NumExpression(Zero);
+                        first = null;
                     else
                         first = Expression();
 
@@ -193,22 +190,42 @@ namespace VovaScript
                         IExpression second;
                         if (Match(TokenType.RCUBSCOB))
                         {
-                            result = new SliceExpression(result, first, new NumExpression(End));
+                            result = new SliceExpression(result, first);
                             continue;
                         }
                         else
-                            second = Expression();
+                            if (Current.Type == TokenType.COLON)
+                                second = null;
+                            else
+                                second = Expression();
+
+                        if (Match(TokenType.COLON))
+                        {
+                            IExpression third;
+                            if (Match(TokenType.RCUBSCOB))
+                            {
+                                result = new SliceExpression(result, first, second);
+                                continue;
+                            }
+                            else
+                                if (Current.Type == TokenType.COLON)
+                                    third = null;
+                                else
+                                    third = Expression();
+
+                            Consume(TokenType.RCUBSCOB);
+                            result = new SliceExpression(result, first, second, third);
+                            continue;
+                        }
 
                         Consume(TokenType.RCUBSCOB);
                         result = new SliceExpression(result, first, second);
                         continue;
                     }
 
-                    if (Match(TokenType.RCUBSCOB))
-                    {
-                        result = new SliceExpression(result, first);
-                        continue;
-                    }
+                    Consume(TokenType.RCUBSCOB);
+                    result = new SliceExpression(result, first);
+                    continue;
                 }
                 break;
             }
