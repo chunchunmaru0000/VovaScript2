@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Security.Policy;
 
 namespace VovaScript
 {
@@ -84,9 +86,9 @@ namespace VovaScript
             object lft = Left.Evaluated();
             object rght = Right.Evaluated();
             if (lft is IClass || rght is IClass)
-            { 
+            {
                 if (!(lft is IClass) || !(rght is IClass))
-                    throw new Exception("ДВОИЧНЫЕ ДЕЙСТВИЯ МОЖНО ДЕЛАТЬ ТОЛЬКО МЕЖДУ ДВУМЯ ОБЪЕКТАМИ А НЕ ОБЪЕКТОМ И ЧЕМ ЛИБО ЕЩЕ");
+                    throw new Exception($"ДВОИЧНЫЕ ДЕЙСТВИЯ МОЖНО ДЕЛАТЬ ТОЛЬКО МЕЖДУ ДВУМЯ ОБЪЕКТАМИ А НЕ ОБЪЕКТОМ И ЧЕМ ЛИБО ЕЩЕ\n{lft}\n{rght}");
                 IClass leftObject = lft as IClass;
                 string method;
                 switch (Operation.Type)
@@ -149,37 +151,37 @@ namespace VovaScript
                 throw new Exception($"МЕТОД <{Left}> ОКАЗАЛСЯ НЕ МЕТОДОМ А <{got}>");
             }
             if (lft is string && rght is long)
+            {
+                string str = Convert.ToString(lft);
                 switch (Operation.Type)
                 {
                     case TokenType.MULTIPLICATION:
-                        string str = Convert.ToString(lft);
                         string ret = "";
-                        for (long i = (long)rght; i > 0; i--)
+                        for (long i = 0; i < (long)rght; i++)
                             ret += str;
                         return ret;
                     case TokenType.PLUS:
-                        break;
-                    case TokenType.MINUS:
-                        break;
+                        return (string)lft + (long)rght;
                     default:
-                        break;
+                        throw new Exception($"НЕПОДДЕРЖИВАЕМАЯЯ ОПЕРАЦИЯ <{Operation}> МЕЖДУ <{lft}> И <{rght}>");
                 }
+            }
             if (lft is long && rght is string)
+            {
+                string str = Convert.ToString(rght);
                 switch (Operation.Type)
                 {
                     case TokenType.MULTIPLICATION:
-                        string str = Convert.ToString(rght);
                         string ret = "";
-                        for (long i = (long)lft; i > 0; i--)
+                        for (long i = 0; i < (long)lft; i++)
                             ret += str;
                         return ret;
                     case TokenType.PLUS:
-                        break;
-                    case TokenType.MINUS:
-                        break;
+                        return (long)lft + (string)rght;
                     default:
-                        break;
+                        throw new Exception($"НЕПОДДЕРЖИВАЕМАЯЯ ОПЕРАЦИЯ <{Operation}> МЕЖДУ <{lft}> И <{rght}>");
                 }
+            }
             if (lft is string && rght is string)
             {
                 string slft = lft is bool ? (bool)lft ? "Истина" : "Ложь" : Convert.ToString(lft);
@@ -506,8 +508,8 @@ namespace VovaScript
             }
             else
             {
-              //  throw new Exception($"НЕСУЩЕСТВУЮЩАЯ ФУНКЦИЯ ХОТЯ БЫ СЕЙЧАС: <{Name.View}>");
-                throw new NotImplementedException("СДЕЛАЙ МЕТОД а вообще это не реально");
+                throw new Exception($"НЕСУЩЕСТВУЮЩАЯ ФУНКЦИЯ ХОТЯ БЫ СЕЙЧАС: <{Name.View}>\n{this}");
+               // throw new NotImplementedException("СДЕЛАЙ МЕТОД а вообще это не реально");
             }
         }
 
@@ -662,13 +664,7 @@ namespace VovaScript
 
         public IExpression Clon() => new LambdaExpression(Args.Select(a => a.Clone()).ToArray(), Ret.Clon());
 
-        public object Evaluated()
-        {
-            BlockStatement Body = new BlockStatement();
-            Body.AddStatement(new ReturnStatement(Ret));
-            IClass lambda = new IClass("лямбдой_был_создан", new Dictionary<string, object>(), new UserFunction(Args, Body));
-            return lambda;
-        }
+        public object Evaluated() => new IClass("лямбдой_был_создан", new Dictionary<string, object>(), new UserFunction(Args, new ReturnStatement(Ret)));
 
         public override string ToString() => $"ЛЯМБДА {PrintStatement.ListString(Args.Select(a => (object)a).ToList())}: {Ret}";
     }
@@ -712,7 +708,7 @@ namespace VovaScript
             }
             catch (Exception)
             {
-                throw new Exception($"НЕКОРРЕКТНЫЕ ИНДЕКСЫ: ОТ <{from}> ДО <{to}> С ДЛИНОЙ <{to - from}> КОГДА У СТРОКИ <{slice}> ДЛИНА <{length}>");
+                throw new Exception($"НЕКОРРЕКТНЫЕ ИНДЕКСЫ: ОТ <{from}> ДО <{to}> С ДЛИНОЙ <{to - from}> КОГДА У ОБЪЕКТА <" + (slice is List<object> ? PrintStatement.ListString((List<object>)slice) : slice) + $"> ДЛИНА <{length}>");
             }
         }
 
@@ -747,16 +743,36 @@ namespace VovaScript
 
         public object Evaluated()
         {
-            int from = DetermineIndex(From);
-            int to = DetermineIndex(To);
-            int step = DetermineIndex(Step, 1);
+            if (!(To is null) && To.Evaluated() is string)
+            {
+                object took = Taken.Evaluated();
+                if (took is List<object>)
+                    return ((List<object>)took)[DetermineIndex(From)];
+                else
+                    return (Convert.ToString(took))[DetermineIndex(From)];
+            }
 
             object taken = Taken.Evaluated();
+            int length = taken is string ? Convert.ToString(taken).Length : ((List<object>)taken).Count;
+
+            int from = DetermineIndex(From);
+            int to = To is null ? DetermineIndex(To, length) : To.Evaluated() is string ? from + 1 : DetermineIndex(To);
+            int step = DetermineIndex(Step, 1);
+
+            if (from == to)
+                if (taken is List<object>)
+                    return new List<object>();
+                else
+                    return "";
+
             int[] indeces = taken is string || taken is long || taken is double ? Sliced(Convert.ToString(taken), from, to, To) :
                             taken is List<object> ? Sliced(taken, from, to, To) :
                             throw new Exception($"<{Taken}> НЕ БЫЛ ЛИСТОМ ИЛИ СТРОКОЙ, А <{taken}>");
             indeces = SelectStepped(indeces.ToList(), step);
 
+            if (indeces.Length == 1)
+                taken = taken is string ? ((string)taken)[indeces[0]] : taken is List<object> ? taken : new List<object>() { taken };
+            
             List<object> beforeStep = Obj2List(taken);
             //Console.WriteLine("indeces " + PrintStatement.ListString(indeces.Select(i => (object)i).ToList()));
             //Console.WriteLine("items   " + PrintStatement.ListString(beforeStep.Select(i => (object)i).ToList()));

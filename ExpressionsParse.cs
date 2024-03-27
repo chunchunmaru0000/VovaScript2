@@ -55,7 +55,7 @@ namespace VovaScript
                 Consume(TokenType.RIGHTSCOB);
                 return new ShortIfExpression(result, pravda, nepravda);
             }
-            throw new NotImplementedException($"{Near(6)}НЕВЕРНЫЙ СИНТАКСИС ГДЕ-ТО РЯДОМ С: {result}");
+            throw new Exception($"{Near(6)}НЕВЕРНЫЙ СИНТАКСИС ГДЕ-ТО РЯДОМ С: {result}");
         }
 
         private IExpression SQLy()
@@ -104,6 +104,7 @@ namespace VovaScript
                 Sep();
             }
             IExpression ret = Expression();
+            Sep();
             return new LambdaExpression(args.ToArray(), ret);
         }
 
@@ -165,7 +166,7 @@ namespace VovaScript
             {
                 if (Match(TokenType.DOT))
                 {
-                    Token attr = Consume(Current.Type);
+                    Token attr = Consume(TokenType.VARIABLE);
                     if (Match(TokenType.LEFTSCOB))
                     {
                         position -= 2; //  ЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛЧЕЛ
@@ -189,7 +190,7 @@ namespace VovaScript
                         IExpression second;
                         if (Match(TokenType.RCUBSCOB))
                         {
-                            result = new SliceExpression(result, first);
+                            result = new SliceExpression(result, first, null, null);
                             continue;
                         }
                         else
@@ -220,7 +221,7 @@ namespace VovaScript
                     }
 
                     Consume(TokenType.RCUBSCOB);
-                    result = new SliceExpression(result, first);
+                    result = new SliceExpression(result, first, new NumExpression(""));
                     continue;
                 }
                 break;

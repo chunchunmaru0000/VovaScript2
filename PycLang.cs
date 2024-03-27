@@ -91,7 +91,6 @@ namespace VovaScript
                         PycOnceLoad(code);
                         break;
                 }
-                
             }
         }
     }

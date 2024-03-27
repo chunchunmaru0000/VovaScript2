@@ -46,11 +46,11 @@ namespace VovaScript
             if (Match(TokenType.DOT))
             {
                 attrs = new List<Token>();
-                while (Current.Type != TokenType.RCUBSCOB)
+                while (Current.Type != TokenType.LCUBSCOB)
                 {
                     attrs.Add(Consume(TokenType.VARIABLE));
                     if (!Match(TokenType.DOT))
-                        if (Current.Type != TokenType.RCUBSCOB)
+                        if (Current.Type != TokenType.LCUBSCOB && Current.Type != TokenType.VARIABLE)
                             throw new Exception($"{Near(6)}ОШИБКА СИНТАКИСА РЯДОМ С: {Current}");
                 }
             }
@@ -105,7 +105,7 @@ namespace VovaScript
                     }
 
                     Consume(TokenType.RCUBSCOB);
-                    slices[i] = new IExpression[3] { first, null, null };
+                    slices[i] = new IExpression[3] { first, new NumExpression(""), null };
                     continue;
                 }
                 break;

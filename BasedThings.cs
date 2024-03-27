@@ -275,13 +275,8 @@ namespace VovaScript
                 if (strokoi is IClass)
                     if (!(((IClass)strokoi).Body is null))
                         return Convert.ToString(((IClass)strokoi).Body.Execute());
-           //         else
-           //             return $"<ОБЬЕКТ КЛАССА {Name}>";
-           //     else
-           //         return $"<ОБЬЕКТ КЛАССА {Name}>";
             }
-          //  else
-                return $"<ОБЬЕКТ КЛАССА {Name}>";
+            return $"<ОБЬЕКТ КЛАССА {Name}>";
         }
     }
 
@@ -359,6 +354,7 @@ namespace VovaScript
         public static Stack<Dictionary<string, object>> Registers = new Stack<Dictionary<string, object>>();
         public static  Dictionary<string, object> Variables = new Dictionary<string, object>()
         {
+            { "Пустой" , new IClass("пустой", new Dictionary<string, object>(), null).Clone() },
             { "ЯЧисло", IInteger },
             { "ЯСтрока", IString },
             { "ЯТочка", IFloat },

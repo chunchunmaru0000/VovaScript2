@@ -102,6 +102,7 @@ namespace VovaScript
                 return result;
             }
             object value = got;
+
             if (value is long)
             {
                 IClass IInt = Objects.IInteger.Clone();

@@ -1,9 +1,7 @@
-﻿using Newtonsoft.Json.Linq;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Eventing.Reader;
+using System.ComponentModel.Design;
 using System.Linq;
-using System.Security.Policy;
 using System.Threading;
 
 namespace VovaScript
@@ -30,7 +28,7 @@ namespace VovaScript
         public void Execute()
         {
             object Result = Expression.Evaluated();
-            Objects.AddVariable(Variable.View, Result);
+            Objects.AddVariable(Variable.View, Expression.Evaluated());
         }
 
         public object Evaluated()
@@ -771,7 +769,7 @@ namespace VovaScript
                 if (got is IClass)
                 {
                     IClass classObject = got as IClass;
-                    IClass last = null;
+                    IClass last;
                     for (int i = 0; i < Attributes.Length - 1; i++)
                     {
                         if (classObject.ContainsAttribute(Attributes[i].View))
@@ -898,119 +896,137 @@ namespace VovaScript
 
         public void Execute()
         {
-            object got = Slice.Evaluated();
-            if (!(got is List<object>) && !(got is string))
-                got = new List<object>() { got };
+            object taked = null;
+            IClass toSave = null;
+            string attrName = "";
             if (Attrs is null)
+                taked = Objects.GetVariable(ObjectName.View);
+            else
             {
-                object taked = Objects.GetVariable(ObjectName.View);
-                object taken = Enumerable.Range(0, taked is List<object> ? ((List<object>)taked).Count : Convert.ToString(taked).Length).Select(e => (object)e).ToList();
-                int[] indeces = null;
-                foreach (IExpression[] slice in Slices)
+                if (Objects.ContainsVariable(ObjectName.View))
                 {
-                    if (slice[0] is null && slice[1] is null && slice[2] is null)
-                        continue;
-                    int from = SliceExpression.DetermineIndex(slice[0]);
-                    int to = SliceExpression.DetermineIndex(slice[1]);
-                    int step = SliceExpression.DetermineIndex(slice[2], 1);
-
-                    indeces = taken is string || taken is long || taken is double ? SliceExpression.Sliced(Convert.ToString(taken), from, to, slice[1]) :
-                            taken is List<object> ? SliceExpression.Sliced(taken, from, to, slice[1]) :
-                            throw new Exception($"<{ObjectName.View}> НЕ БЫЛ ЛИСТОМ ИЛИ СТРОКОЙ, А <{taken}>");
-                    indeces = SliceExpression.SelectStepped(indeces.ToList(), step);
-
-                    List<object> beforeStep = SliceExpression.Obj2List(taken);
-                    List<object> newArr = new List<object>();
-                    foreach (int index in indeces)
-                        newArr.Add(beforeStep[index]);
-
-                    taken = newArr.All(b => b is string) ? (object)string.Join("", newArr) : newArr;
-                }
-                List<int> assignIndecex = SliceExpression.Obj2List(taken).Select(a => Convert.ToInt32(a)).ToList();
-                List<object> value = SliceExpression.Obj2List(taked);
-                List<object> toAssign = SliceExpression.Obj2List(got);
-
-                if (Exactly)
-                {
-                    if (toAssign.Count != assignIndecex.Count)
-                        throw new Exception($"БЫЛО ИНДЕКСОВ НА НАЗНАЧЕНИЕ <{assignIndecex.Count}> НО В НАЗНАЧЕНИИ ЦЕЛЫХ <{toAssign.Count}>\n{this}");
-
-                    for (int i = 0; i < assignIndecex.Count; i++)
-                        value[assignIndecex[i]] = toAssign[i];
-                }
-                else
-                {
-                    if (!Fill && Slices.All(s => s[2] is null))
+                    object took = Objects.GetVariable(ObjectName.View);
+                    if (took is IClass)
                     {
-                        if (toAssign.Count == assignIndecex.Count)
-                            for (int i = 0; i < assignIndecex.Count; i++)
-                                value[assignIndecex[i]] = toAssign[i];
-                        else
+                        IClass classObject = took as IClass;
+                        IClass last;
+                        for (int i = 0; i < Attrs.Length - 1; i++)
                         {
-                            List<object> begin = value.Take(assignIndecex[0]).ToList();
-                            value.RemoveRange(assignIndecex[0], assignIndecex.Count);
-                            toAssign.AddRange(value);
-                            begin.AddRange(toAssign);
-                            value = begin;
-                        }
-                    }
-                    else
-                    {
-                        if (toAssign.Count == assignIndecex.Count || toAssign.Count > assignIndecex.Count)
-                            for (int i = 0; i < assignIndecex.Count; i++)
-                                value[assignIndecex[i]] = toAssign[i];
-                        else
-                            for (int i = 0; i < assignIndecex.Count; i++)
-                                value[assignIndecex[i]] = toAssign[i >= toAssign.Count ? toAssign.Count - 1 : i];
-                    }
-                }
-
-                Objects.AddVariable(ObjectName.View, value);
-                return;
-            }
-
-            /*
-            if (Objects.ContainsVariable(ObjectName.View))
-            {
-                object got = Objects.GetVariable(ObjectName.View);
-                if (got is IClass)
-                {
-                    IClass classObject = got as IClass;
-                    IClass last;
-                    for (int i = 0; i < Attrs.Length - 1; i++)
-                    {
-                        if (classObject.ContainsAttribute(Attrs[i].View))
-                        {
-                            got = classObject.GetAttribute(Attrs[i].View);
-                            last = classObject;
-                            if (got is IClass)
+                            if (classObject.ContainsAttribute(Attrs[i].View))
                             {
-                                classObject = got as IClass;
-                                continue;
+                                took = classObject.GetAttribute(Attrs[i].View);
+                                last = classObject;
+                                if (took is IClass)
+                                {
+                                    classObject = took as IClass;
+                                    continue;
+                                }
+                                if (i == Attrs.Length - 1)
+                                {
+                                    toSave = last;
+                                    attrName = Attrs[i].View;
+                                    taked = last.GetAttribute(attrName);
+                                    break;
+                                }
+                                throw new Exception($"НЕ ОБЪЕКТ: <{Attrs[i]}> ГДЕ-ТО В <{ObjectName}>");
                             }
                             if (i == Attrs.Length - 1)
                             {
-                                Result = Value.Evaluated();
-                                last.AddAttribute(Attrs[i].View, Result);
-                                return;
+                                toSave = classObject;
+                                attrName = Attrs[i].View;
+                                taked = classObject.GetAttribute(attrName);
+                                break;
                             }
-                            throw new Exception($"НЕ ОБЪЕКТ: <{Attrs[i]}> ГДЕ-ТО В <{ObjectName}>");
+                            throw new Exception($"НЕСУЩЕСТВУЮЩИЙ КАК ОБЪЕКТ: <{Attrs[i]}> ГДЕ-ТО В <{ObjectName}>");
                         }
-                        if (i == Attrs.Length - 1)
+                        if (taked is null)
                         {
-                            Result = Value.Evaluated();
-                            classObject.AddAttribute(Attrs[i].View, Result);
-                            return;
+                            toSave = classObject;
+                            attrName = Attrs.Last().View;
+                            taked = classObject.GetAttribute(attrName);
                         }
-                        throw new Exception($"НЕСУЩЕСТВУЮЩИЙ КАК ОБЪЕКТ: <{Attrs[i]}> ГДЕ-ТО В <{ObjectName}>");
                     }
-                    Result = Value.Evaluated();
-                    classObject.AddAttribute(Attrs.Last().View, Result);
-                    return;
+                }
+                else
+                    throw new Exception($"НЕСУЩЕСТВУЮЩИЙ КАК ОБЪЕКТ: <{ObjectName}>");
+            }
+
+            object got = Slice.Evaluated();
+            if (!(got is List<object>) && !(got is string))
+                got = new List<object>() { got };
+
+            object taken = Enumerable.Range(0, taked is List<object> ? ((List<object>)taked).Count : Convert.ToString(taked).Length).Select(e => (object)e).ToList();
+            int[] indeces = null;
+            foreach (IExpression[] slice in Slices)
+            {
+                if (slice[0] is null && slice[1] is null && slice[2] is null)
+                    continue;
+                int from = SliceExpression.DetermineIndex(slice[0]);
+              //  int to = SliceExpression.DetermineIndex(slice[1]);
+                int to = slice[1] is null ? SliceExpression.DetermineIndex(slice[1]) : slice[1].Evaluated() is string ? from : SliceExpression.DetermineIndex(slice[1]);
+                int step = SliceExpression.DetermineIndex(slice[2], 1);
+
+                indeces = taken is string || taken is long || taken is double ? SliceExpression.Sliced(Convert.ToString(taken), from, to, slice[1]) :
+                        taken is List<object> ? SliceExpression.Sliced(taken, from, to, slice[1]) :
+                        throw new Exception($"<{ObjectName.View}> НЕ БЫЛ ЛИСТОМ ИЛИ СТРОКОЙ, А <{taken}>");
+                indeces = SliceExpression.SelectStepped(indeces.ToList(), step);
+
+                List<object> beforeStep = SliceExpression.Obj2List(taken);
+                List<object> newArr = new List<object>();
+                foreach (int index in indeces)
+                    newArr.Add(beforeStep[index]);
+                
+                taken = newArr.All(b => b is string) ? (object)string.Join("", newArr) : newArr;
+            }
+            List<int> assignIndecex = SliceExpression.Obj2List(taken).Select(a => Convert.ToInt32(a)).ToList();
+            List<object> value = SliceExpression.Obj2List(taked);
+            List<object> toAssign = SliceExpression.Obj2List(got);
+            bool was = value.All(v => v is string);
+
+            if (Exactly)
+            {
+                if (toAssign.Count != assignIndecex.Count)
+                    throw new Exception($"БЫЛО ИНДЕКСОВ НА НАЗНАЧЕНИЕ <{assignIndecex.Count}> НО В НАЗНАЧЕНИИ ЦЕЛЫХ <{toAssign.Count}>\n{this}");
+
+                for (int i = 0; i < assignIndecex.Count; i++)
+                    value[assignIndecex[i]] = toAssign[i];
+            }
+            else
+            {
+                if (!Fill && Slices.All(s => s[2] is null))
+                {
+                    if (toAssign.Count == assignIndecex.Count)
+                        for (int i = 0; i < assignIndecex.Count; i++)
+                            value[assignIndecex[i]] = toAssign[i];
+                    else
+                    {
+                        List<object> begin = value.Take(assignIndecex[0]).ToList();
+                        value.RemoveRange(assignIndecex[0], assignIndecex.Count);
+                        toAssign.AddRange(value);
+                        begin.AddRange(toAssign);
+                        value = begin;
+                    }
+                }
+                else
+                {
+                    if (toAssign.Count == assignIndecex.Count || toAssign.Count > assignIndecex.Count)
+                        for (int i = 0; i < assignIndecex.Count; i++)
+                            value[assignIndecex[i]] = toAssign[i];
+                    else
+                        for (int i = 0; i < assignIndecex.Count; i++)
+                            value[assignIndecex[i]] = toAssign[i >= toAssign.Count ? toAssign.Count - 1 : i];
                 }
             }
-            throw new Exception($"НЕСУЩЕСТВУЮЩИЙ КАК ОБЪЕКТ: <{ObjectName}>");*/
-            throw new Exception("НЕ СДЕЛАНО НАЗНАЧЕНИЕ ДЛЯ ОБЪЕКТОВ");
+            object ret;
+            if (was)
+                ret = string.Join("", value.Select(v => "" + Convert.ToString(v)[0]).ToArray());
+            else
+                ret = value;
+
+            if (toSave is null)
+                Objects.AddVariable(ObjectName.View, ret);
+            else
+                toSave.AddAttribute(attrName, ret);
         }
 
         public object Evaluated()
