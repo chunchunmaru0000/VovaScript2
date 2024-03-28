@@ -288,6 +288,7 @@ namespace VovaScript
         // system
         public static IClass WriteWithoutSlashN = new IClass("очерк", new Dictionary<string, object>(), new WriteNotLn());
         public static IClass Input = new IClass("ввод", new Dictionary<string, object>(), new InputFunction());
+
         // math
         public static IClass Sinus = new IClass("синус", new Dictionary<string, object>(), new Sinus());
         public static IClass Cosinus = new IClass("косинус", new Dictionary<string, object>(), new Cosinus());
@@ -297,13 +298,21 @@ namespace VovaScript
         public static IClass Max = new IClass("максимум", new Dictionary<string, object>(), new Max());
         public static IClass Min = new IClass("минимум", new Dictionary<string, object>(), new Min());
         public static IClass Square = new IClass("корень", new Dictionary<string, object>(), new Square());
+        
         // io
         public static IClass ReadAllFile = new IClass("вычитать", new Dictionary<string, object>(), new ReadAllFileFunction());
         public static IClass WritingFile = new IClass("писать", new Dictionary<string, object>(), new WritingFileFunction());
+        
         // methods
         public static IClass Split = new IClass("раздел", new Dictionary<string, object>(), new SplitFunction());
         public static IClass Length = new IClass("длина", new Dictionary<string, object>(), new LenghtFunction());
         public static IClass ASCIICode = new IClass("чаркод", new Dictionary<string, object>(), new ASCIICodeFunction());
+        public static IClass FromASCIICode = new IClass("символом", new Dictionary<string, object>(), new FromASCIICodeFunction());
+        public static IClass IsUpper = new IClass("высок", new Dictionary<string, object>(), new IsUpperFunction());
+        public static IClass IsLower = new IClass("низок", new Dictionary<string, object>(), new IsLowerFunction());
+        public static IClass ToUpper = new IClass("высоким", new Dictionary<string, object>(), new ToUpperFunction());
+        public static IClass ToLower = new IClass("низким", new Dictionary<string, object>(), new ToLowerFunction());
+        
         // to type
         public static IClass Stringing = new IClass("строчить", new Dictionary<string, object>(), new StringingFunction());
         public static IClass Inting = new IClass("числить", new Dictionary<string, object>(), new IntingFunction());
@@ -320,6 +329,8 @@ namespace VovaScript
             { "пол", new IClass("_пол", new Dictionary<string, object>(), Floor.Cloned()) },
             { "длина", new IClass("_длина", new Dictionary<string, object>(), Length.Cloned()) },
             { "чаркод", new IClass("_чаркод", new Dictionary<string, object>(), ASCIICode.Cloned()) },
+            { "символом", new IClass("_символом", new Dictionary<string, object>(), FromASCIICode.Cloned()) },
+            { "чаром", new IClass("_символом", new Dictionary<string, object>(), FromASCIICode.Cloned()) },
         });
 
         public static IClass IFloat = new IClass("ЯТочка", new Dictionary<string, object>
@@ -331,6 +342,8 @@ namespace VovaScript
             { "пол", new IClass("_пол", new Dictionary<string, object>(), Floor.Cloned()) },
             { "длина", new IClass("_длина", new Dictionary<string, object>(), Length.Cloned()) },
             { "чаркод", new IClass("_чаркод", new Dictionary<string, object>(), ASCIICode.Cloned()) },
+            { "символом", new IClass("_символом", new Dictionary<string, object>(), FromASCIICode.Cloned()) },
+            { "чаром", new IClass("_символом", new Dictionary<string, object>(), FromASCIICode.Cloned()) },
         });
 
         public static IClass IString = new IClass("ЯСтрока", new Dictionary<string, object>
@@ -340,6 +353,12 @@ namespace VovaScript
             { "точкой", new IClass("_точкой", new Dictionary<string, object>(), Doubling.Cloned()) },
             { "длина", new IClass("_длина", new Dictionary<string, object>(), Length.Cloned()) },
             { "чаркод", new IClass("_чаркод", new Dictionary<string, object>(), ASCIICode.Cloned()) },
+            { "символом", new IClass("_символом", new Dictionary<string, object>(), FromASCIICode.Cloned()) },
+            { "чаром", new IClass("_символом", new Dictionary<string, object>(), FromASCIICode.Cloned()) },
+            { "высок", new IClass("_высок", new Dictionary<string, object>(), IsUpper.Cloned()) },
+            { "низок", new IClass("_низок", new Dictionary<string, object>(), IsLower.Cloned()) },
+            { "высоким", new IClass("_высоким", new Dictionary<string, object>(), ToUpper.Cloned()) },
+            { "низким", new IClass("_низким", new Dictionary<string, object>(), ToLower.Cloned()) },
         });
 
         public static IClass IBool = new IClass("ЯПравда", new Dictionary<string, object>
@@ -349,6 +368,8 @@ namespace VovaScript
             { "точкой", new IClass("_точкой", new Dictionary<string, object>(), Doubling.Cloned()) },
             { "длина", new IClass("_длина", new Dictionary<string, object>(), Length.Cloned()) },
             { "чаркод", new IClass("_чаркод", new Dictionary<string, object>(), ASCIICode.Cloned()) },
+            { "символом", new IClass("_символом", new Dictionary<string, object>(), FromASCIICode.Cloned()) },
+            { "чаром", new IClass("_символом", new Dictionary<string, object>(), FromASCIICode.Cloned()) },
         });
 
         public static IClass IList = new IClass("ЯЛист", new Dictionary<string, object>
@@ -357,13 +378,15 @@ namespace VovaScript
             { "мин", new IClass("_минимум", new Dictionary<string, object>(), Min.Cloned()) },
             { "макс", new IClass("_максимум", new Dictionary<string, object>(), Max.Cloned()) },
             { "длина", new IClass("_длина", new Dictionary<string, object>(), Length.Cloned()) },
+            { "символом", new IClass("_символом", new Dictionary<string, object>(), FromASCIICode.Cloned()) },
+            { "чаром", new IClass("_символом", new Dictionary<string, object>(), FromASCIICode.Cloned()) },
         });
 
         /*        VARIABLES          */
 
         public static object NOTHING = Convert.ToInt64(0); // need improving i believe
         public static Stack<Dictionary<string, object>> Registers = new Stack<Dictionary<string, object>>();
-        public static  Dictionary<string, object> Variables = new Dictionary<string, object>()
+        public static Dictionary<string, object> Variables = new Dictionary<string, object>()
         {
             { "Пустой" , new IClass("пустой", new Dictionary<string, object>(), null).Clone() },
             { "ЯЧисло", IInteger },
@@ -402,6 +425,14 @@ namespace VovaScript
             { "строчить",  Stringing },
             { "числить",  Inting },
             { "точить",  Doubling },
+            { "длина", Length },
+            { "чаркод", ASCIICode },
+            { "символом", FromASCIICode.Clone() },
+            { "чаром", FromASCIICode.Clone() },
+            { "высок", IsUpper },
+            { "низок", IsLower },
+            { "высоким", ToUpper },
+            { "низким", ToLower },
 
             { "вычитать",  ReadAllFile },
             { "писать",  WritingFile.Clone() },

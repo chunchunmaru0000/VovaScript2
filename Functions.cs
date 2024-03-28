@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 
 namespace VovaScript
 {
@@ -598,6 +600,119 @@ namespace VovaScript
 
         public IFunction Cloned() => new ASCIICodeFunction();
 
-        public override string ToString() => "ЧАРКОД(<>)";
+        public override string ToString() => "СИМВОЛОМ(<>)";
+    }
+
+    public sealed class FromASCIICodeFunction : IFunction
+    {
+        public static string GetFromASCII(object x)
+        {
+            if (x is bool)
+                x = (bool)x ? Convert.ToInt64(1) : Convert.ToInt64(0);
+            if (x is long || x is double)
+                return Convert.ToString((char)Convert.ToInt64(x));
+            if (x is string)
+                return Convert.ToString(x);
+            throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x}> ДЛЯ <{new FromASCIICodeFunction()}>");
+        }
+
+        public object Execute(object[] x)
+        {
+            if (x.Length < 1)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+            if (x[0] is List<object>)
+                if (((List<object>)x[0]).All(i => i is bool || i is double || i is long))
+                    return string.Join("", ((List<object>)x[0]).Select(i => GetFromASCII(i)));
+            return GetFromASCII(x[0]);
+        }
+
+        public IFunction Cloned() => new FromASCIICodeFunction();
+
+        public override string ToString() => "СИМВОЛОМ(<>)";
+    }
+
+    public sealed class IsUpperFunction : IFunction
+    {
+        public object Execute(object[] x)
+        {
+            if (x.Length < 1)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+            if (x[0] is string)
+            {
+                string took = Convert.ToString(x[0]);
+                return took.All(got => char.IsUpper(got) || (got > 1039 && got < 1072 || got == 1025));
+            }
+            throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[0]}> ДЛЯ <{this}>");
+        }
+
+        public IFunction Cloned() => new IsUpperFunction();
+
+        public override string ToString() => "ВЫСОК(<>)";
+    }
+
+    public sealed class IsLowerFunction : IFunction
+    {
+        public object Execute(object[] x)
+        {
+            if (x.Length < 1)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+            if (x[0] is string)
+            {
+                string took = Convert.ToString(x[0]);
+                return took.All(got => char.IsLower(got) || (got > 1071 && got < 1104 || got == 1105));
+            }
+            throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[0]}> ДЛЯ <{this}>");
+        }
+
+        public IFunction Cloned() => new IsLowerFunction();
+
+        public override string ToString() => "НИЗОК(<>)";
+    }
+
+    public sealed class ToUpperFunction : IFunction
+    {
+        public object Execute(object[] x)
+        {
+            if (x.Length < 1)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+            if (x[0] is string)
+            {
+                string took = Convert.ToString(x[0]);
+                return string.Join("", took.Select(got => char.IsLower(got) ?
+                                              char.ToUpper(got) :
+                                          got > 1039 && got < 1072 ?
+                                              (char)(got + 32) : 
+                                          got == 1025 ? 'Ё': got));
+            }
+            throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[0]}> ДЛЯ <{this}>");
+        }
+
+        public IFunction Cloned() => new ToUpperFunction();
+
+        public override string ToString() => "ВЫСОКИМ(<>)";
+    }
+
+    public sealed class ToLowerFunction : IFunction
+    {
+        public object Execute(object[] x)
+        {
+            if (x.Length < 1)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+            if (x[0] is string)
+            {
+                string took = Convert.ToString(x[0]);
+                Console.WriteLine($"{this} КРАЙНЕ ПЛОХ");
+                return string.Join("", took.Select(got => char.IsUpper(got) ?
+                                              char.ToLower(got) :
+                                          got > 1071 && got < 1104 ?
+                                              (char)(got - 32) :
+                                          got == 1105 ? 'ё' : got));
+            }
+            throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[0]}> ДЛЯ <{this}>");
+        }
+
+        public IFunction Cloned() => new ToLowerFunction();
+
+        public override string ToString() => "НИЗКИМ(<>)";
     }
 }
