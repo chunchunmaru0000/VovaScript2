@@ -302,6 +302,8 @@ namespace VovaScript
         public static IClass WritingFile = new IClass("писать", new Dictionary<string, object>(), new WritingFileFunction());
         // methods
         public static IClass Split = new IClass("раздел", new Dictionary<string, object>(), new SplitFunction());
+        public static IClass Length = new IClass("длина", new Dictionary<string, object>(), new LenghtFunction());
+        public static IClass ASCIICode = new IClass("чаркод", new Dictionary<string, object>(), new ASCIICodeFunction());
         // to type
         public static IClass Stringing = new IClass("строчить", new Dictionary<string, object>(), new StringingFunction());
         public static IClass Inting = new IClass("числить", new Dictionary<string, object>(), new IntingFunction());
@@ -316,6 +318,8 @@ namespace VovaScript
             { "точкой", new IClass("_точкой", new Dictionary<string, object>(), Doubling.Cloned()) },
             { "потолок", new IClass("_потолок", new Dictionary<string, object>(), Ceiling.Cloned()) },
             { "пол", new IClass("_пол", new Dictionary<string, object>(), Floor.Cloned()) },
+            { "длина", new IClass("_длина", new Dictionary<string, object>(), Length.Cloned()) },
+            { "чаркод", new IClass("_чаркод", new Dictionary<string, object>(), ASCIICode.Cloned()) },
         });
 
         public static IClass IFloat = new IClass("ЯТочка", new Dictionary<string, object>
@@ -325,6 +329,8 @@ namespace VovaScript
             { "точкой", new IClass("_точкой", new Dictionary<string, object>(), Doubling.Cloned()) },
             { "потолок", new IClass("_потолок", new Dictionary<string, object>(), Ceiling.Cloned()) },
             { "пол", new IClass("_пол", new Dictionary<string, object>(), Floor.Cloned()) },
+            { "длина", new IClass("_длина", new Dictionary<string, object>(), Length.Cloned()) },
+            { "чаркод", new IClass("_чаркод", new Dictionary<string, object>(), ASCIICode.Cloned()) },
         });
 
         public static IClass IString = new IClass("ЯСтрока", new Dictionary<string, object>
@@ -332,6 +338,8 @@ namespace VovaScript
             { "числом", new IClass("_числом", new Dictionary<string, object>(), Inting.Cloned()) },
             { "строкой", new IClass("_строкой", new Dictionary<string, object>(), Stringing.Cloned()) },
             { "точкой", new IClass("_точкой", new Dictionary<string, object>(), Doubling.Cloned()) },
+            { "длина", new IClass("_длина", new Dictionary<string, object>(), Length.Cloned()) },
+            { "чаркод", new IClass("_чаркод", new Dictionary<string, object>(), ASCIICode.Cloned()) },
         });
 
         public static IClass IBool = new IClass("ЯПравда", new Dictionary<string, object>
@@ -339,6 +347,8 @@ namespace VovaScript
             { "числом", new IClass("_числом", new Dictionary<string, object>(), Inting.Cloned()) },
             { "строкой", new IClass("_строкой", new Dictionary<string, object>(), Stringing.Cloned()) },
             { "точкой", new IClass("_точкой", new Dictionary<string, object>(), Doubling.Cloned()) },
+            { "длина", new IClass("_длина", new Dictionary<string, object>(), Length.Cloned()) },
+            { "чаркод", new IClass("_чаркод", new Dictionary<string, object>(), ASCIICode.Cloned()) },
         });
 
         public static IClass IList = new IClass("ЯЛист", new Dictionary<string, object>
@@ -346,11 +356,12 @@ namespace VovaScript
             { "строкой", new IClass("_строкой", new Dictionary<string, object>(), Stringing.Cloned()) },
             { "мин", new IClass("_минимум", new Dictionary<string, object>(), Min.Cloned()) },
             { "макс", new IClass("_максимум", new Dictionary<string, object>(), Max.Cloned()) },
+            { "длина", new IClass("_длина", new Dictionary<string, object>(), Length.Cloned()) },
         });
 
         /*        VARIABLES          */
 
-        public static object NOTHING = (long)0; // need improving i believe
+        public static object NOTHING = Convert.ToInt64(0); // need improving i believe
         public static Stack<Dictionary<string, object>> Registers = new Stack<Dictionary<string, object>>();
         public static  Dictionary<string, object> Variables = new Dictionary<string, object>()
         {

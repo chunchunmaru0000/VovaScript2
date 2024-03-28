@@ -749,7 +749,7 @@ namespace VovaScript
                 if (took is List<object>)
                     return ((List<object>)took)[DetermineIndex(From)];
                 else
-                    return (Convert.ToString(took))[DetermineIndex(From)];
+                    return Convert.ToString((Convert.ToString(took))[DetermineIndex(From)]);
             }
 
             object taken = Taken.Evaluated();

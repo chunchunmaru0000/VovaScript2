@@ -543,7 +543,7 @@ namespace VovaScript
                                 writer.WriteLine(data);
                                 break;
                             default:
-                                throw new Exception("НЕСУЩЕСТВУЮЩИЙ РЕЖИМ ЗАПИСИ: " + file);
+                                throw new Exception($"НЕСУЩЕСТВУЮЩИЙ РЕЖИМ ЗАПИСИ <{mode}>: " + file);
                         }
             }
             catch (IOException)
@@ -557,5 +557,47 @@ namespace VovaScript
         public IFunction Cloned() => new WritingFileFunction();
 
         public override string ToString() => "ЛЕТОПИСИТЬ(<>)";
+    }
+
+    public sealed class LenghtFunction : IFunction
+    {
+        public object Execute(object[] x)
+        {
+            if (x.Length < 1)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+            if (x[0] is string)
+                return ((string)x[0]).Length;
+            if (x[0] is long || x[0] is double)
+                return Convert.ToString(x[0]).Length;
+            if (x[0] is bool)
+                return (bool)x[0] ? 1 : 0;
+            if (x[0] is List<object>)
+                return ((List<object>)x[0]).Count;
+            throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[0]}> ДЛЯ <{this}>");
+        }
+
+        public IFunction Cloned() => new LenghtFunction();
+
+        public override string ToString() => "ДЛИНА(<>)";
+    }
+
+    public sealed class ASCIICodeFunction : IFunction
+    {
+        public object Execute(object[] x)
+        {
+            if (x.Length < 1)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+            if (x[0] is string)
+                return Convert.ToInt64((int)(((string)x[0])[0]));
+            if (x[0] is long || x[0] is double)
+                return Convert.ToInt64((int)(Convert.ToString(x[0])[0]));
+            if (x[0] is bool)
+                return (bool)x[0] ? Convert.ToInt64(61) : Convert.ToInt64(61);
+            throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[0]}> ДЛЯ <{this}>");
+        }
+
+        public IFunction Cloned() => new ASCIICodeFunction();
+
+        public override string ToString() => "ЧАРКОД(<>)";
     }
 }

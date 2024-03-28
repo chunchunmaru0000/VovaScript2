@@ -962,7 +962,6 @@ namespace VovaScript
                 if (slice[0] is null && slice[1] is null && slice[2] is null)
                     continue;
                 int from = SliceExpression.DetermineIndex(slice[0]);
-              //  int to = SliceExpression.DetermineIndex(slice[1]);
                 int to = slice[1] is null ? SliceExpression.DetermineIndex(slice[1]) : slice[1].Evaluated() is string ? from : SliceExpression.DetermineIndex(slice[1]);
                 int step = SliceExpression.DetermineIndex(slice[2], 1);
 
