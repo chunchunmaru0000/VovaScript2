@@ -32,7 +32,7 @@ namespace VovaScript
             {
                 return result.GetResult();
             }
-            return Objects.NOTHING;
+            return (long)0;
         }
 
         public IFunction Cloned()
@@ -701,12 +701,8 @@ namespace VovaScript
             if (x[0] is string)
             {
                 string took = Convert.ToString(x[0]);
-                Console.WriteLine($"{this} КРАЙНЕ ПЛОХ");
-                return string.Join("", took.Select(got => char.IsUpper(got) ?
-                                              char.ToLower(got) :
-                                          got > 1071 && got < 1104 ?
-                                              (char)(got - 32) :
-                                          got == 1105 ? 'ё' : got));
+                CultureInfo info = new CultureInfo("ru-RU");
+                return string.Join("", took.Select(got => char.IsUpper(got) || got > 1071 && got < 1104 || got == 1105 ? char.ToLower(got, info) : got));
             }
             throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[0]}> ДЛЯ <{this}>");
         }

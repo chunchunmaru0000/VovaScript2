@@ -158,7 +158,7 @@ namespace VovaScript
             return (IExpression)Statement();
             throw new Exception($"{Near(6)}НЕВОЗМОЖНОЕ МАТЕМАТИЧЕСКОЕ ВЫРАЖЕНИЕ: <{current}>\nПОЗИЦИЯ: ЛИНИЯ<{line}> СИМВОЛ<{position}>");
         }
-        // 1000iq
+
         private IExpression Aftery()
         {
             IExpression result = Primary();
@@ -232,6 +232,7 @@ namespace VovaScript
         private IExpression Unary()
         {
             Token current = Current;
+            Token last = current;
             int sign = -1;
             if (Match(TokenType.NOT))
             {
@@ -241,11 +242,12 @@ namespace VovaScript
                     if (Match(TokenType.NOT))
                     {
                         sign *= -1;
+                        last = current;
                         continue;
                     }
                     break;
                 }
-                return sign < 0 ? new UnaryExpression(current, Aftery()) : Aftery();
+                return sign < 0 ? new UnaryExpression(last, Aftery()) : Aftery();
             }
             if (Match(TokenType.MINUS, TokenType.PLUS))
                 return new UnaryExpression(current, Aftery());

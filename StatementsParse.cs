@@ -54,7 +54,7 @@ namespace VovaScript
                             throw new Exception($"{Near(6)}ОШИБКА СИНТАКИСА РЯДОМ С: {Current}");
                 }
             }
-
+            
             List<IExpression[]> slices = new List<IExpression[]>();
             int i = -1;
             while (true)
@@ -181,11 +181,29 @@ namespace VovaScript
 
         private IStatement Fory()
         {
+            /*
+            if (Current.Type == TokenType.VARIABLE && Get(1).Type == TokenType.WHICH)
+            {
+                Token itterator = Consume(TokenType.VARIABLE);
+                Consume(TokenType.WHICH);
+                IExpression which = Expression();
+                Consume(TokenType.IN);
+                IExpression begin = Expression();
+                bool eq = false;
+                if (Match(TokenType.DOTDOT))
+                    eq = false;
+                else if (Match(TokenType.DOTDOTEQ))
+                    eq = true;
+                else
+                    throw new Exception($"{Near(10)}");
+                IExpression end = Expression();
+                IStatement notBody = OneOrBlock();
+                return new For();
+            }
+*/
             IStatement definition = Assigny();
-
             IExpression condition = Expression();
             Sep();
-
             Token current = Current;
             IStatement alter = null;
             if (Match(TokenType.VARIABLE))

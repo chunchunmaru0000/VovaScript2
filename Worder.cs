@@ -199,6 +199,16 @@
                     word.Type = TokenType.FILL;
                     return word;
 
+                case "который":
+                    word.Type = TokenType.WHICH;
+                    return word;
+                case "которая":
+                    word.Type = TokenType.WHICH;
+                    return word;
+                case "которое":
+                    word.Type = TokenType.WHICH;
+                    return word;
+
                 /*           SQL           */
 
                 case "создать":
@@ -217,7 +227,7 @@
                 case "тб":
                     word.Type = TokenType.TABLE;
                     return word;
-
+/*
                 //case "строчка":
                 //    word.Type = TokenType.STROKE;
                 //   return word;
@@ -230,6 +240,7 @@
                 //case "обманчивость":
                 //    word.Type = TokenType.BUL;
                 //    return word;
+*/
                 case "все":
                     word.Type = TokenType.ALL;
                     return word;

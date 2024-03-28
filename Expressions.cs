@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Security.Policy;
 
 namespace VovaScript
 {
@@ -45,7 +43,57 @@ namespace VovaScript
         public object Evaluated()
         {
             object value = Value.Evaluated();
-            
+
+            if (value is IClass)
+            {
+                Console.WriteLine("Я НЕ УВЕРЕН ВООБЩЕ ЧТО ЭТО НЕ БУДЕТ ИМЕТЬ НЕ НУДНЫХ ОШИБОК НО ЭТО ТАК ЧТО БЫ БЫЛО ДА");
+                IClass valueObject = value as IClass;
+                string method;
+                switch (Operation.Type)
+                {
+                    case TokenType.PLUS:
+                        method = "_плюс";
+                        break;
+                    case TokenType.MINUS:
+                        method = "_минус";
+                        break;
+                    case TokenType.NOT:
+                        method = "_не";
+                        break;
+                    default:
+                        throw new Exception($"НЕПОДДЕРЖИВАЕМАЯ БИНАРНАЯ ОПЕРАЦИЯ ДЛЯ ДАННЫХ ОБЪЕКТОВ: <{valueObject}> <{Operation.Type}> | <{Value}> <{Operation}>");
+                }
+                object got;
+                if (valueObject.ContainsAttribute(method))
+                    got = valueObject.GetAttribute(method);
+                else
+                    throw new Exception($"В ОБЪЕКТЕ <{valueObject}> НЕТУ МЕТОДА <{method}>");
+                if (got is IClass)
+                {
+                    IClass meth = got as IClass;
+                    if (meth.Body is UserFunction)
+                    {
+                        UserFunction userF = meth.Body as UserFunction;
+                        if (userF.ArgsCount() < 1)
+                            throw new Exception($"ДЛЯ ДАННОГО МАГИЧАСКОГО МЕТОДА <УМНОЖЕНИЕ> НУЖЕН ХОТЯ БЫ ОДИН АРГУМЕНТ");
+                        Objects.Push();
+                        // attrs
+                        foreach (var attribute in valueObject.Attributes)
+                            Objects.AddVariable(attribute.Key, attribute.Value);
+                        // execute
+                        object result = userF.Execute();
+                        // restore
+                        foreach (var variable in Objects.Variables)
+                            if (valueObject.ContainsAttribute(variable.Key))
+                                valueObject.AddAttribute(variable.Key, variable.Value);
+                        Objects.Pop();
+                        return result;
+                    }
+                    throw new Exception("СОННА ВАКЕ НАЙ");
+                    // return meth.Execute(new object[] { rght });
+                }
+                throw new Exception($"МЕТОД <{valueObject}> ОКАЗАЛСЯ НЕ МЕТОДОМ А <{got}>");
+            }
             switch (Operation.Type) 
             {
                 case TokenType.PLUS:
@@ -56,9 +104,17 @@ namespace VovaScript
                     else 
                         return -(double)value;
                 case TokenType.NOT:
-                    return !Convert.ToBoolean(value);
+                    if (value is string)
+                        return !(Convert.ToString(value).Length != 0);
+                    if (value is long || value is double)
+                        return !(Convert.ToDouble(value) != 0);
+                    if (value is List<object>)
+                        return !(((List<object>)value).Count != 0);
+                    
+                    throw new Exception($"НЕВОЗМОЖНЫЙ ОБЪЕКТ <{value}> ДЛЯ ОПЕРАЦИИ <{Operation.Type}>");
                 default:
-                    Console.WriteLine($"<{Value.Evaluated()}> <{Value}> <{Operation.Type}> <{Operation.View}>");
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"<{Value.Evaluated()}> <{Value}> <{Operation}> <{Operation.View}>");
                     throw new Exception("ДА КАК ТАК ВООБЩЕ ВОЗМОЖНО ЧТО ЛИБО ПОСТАВИТЬ КРОМЕ + ИЛИ - ПЕРЕД ЧИСЛОМ");
             }
         }

@@ -1,6 +1,6 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
-using System.ComponentModel.Design;
 using System.Linq;
 using System.Threading;
 
@@ -690,46 +690,9 @@ namespace VovaScript
 
         public void Execute() 
         {
-            if (Objects.ContainsVariable(ObjName.View))
-            {
-                object got = Objects.GetVariable(ObjName.View);
-                if (got is IClass)
-                {
-                    IClass classObject = got as IClass;
-                    IClass last;
-                    for (int i = 0; i < Attributes.Length-1; i++)
-                    {
-                        if (classObject.ContainsAttribute(Attributes[i].View))
-                        {
-                            got = classObject.GetAttribute(Attributes[i].View);
-                            last = classObject;
-                            if (got is IClass)
-                            {
-                                classObject = got as IClass;
-                                continue;
-                            }
-                            if (i == Attributes.Length - 1)
-                            {
-                                Result = Value.Evaluated();
-                                last.AddAttribute(Attributes[i].View, Result);
-                                return;
-                            }
-                            throw new Exception($"НЕ ОБЪЕКТ: <{Attributes[i]}> ГДЕ-ТО В <{ObjName}>");
-                        }
-                        if (i == Attributes.Length - 1)
-                        {
-                            Result = Value.Evaluated();
-                            classObject.AddAttribute(Attributes[i].View, Result);
-                            return;
-                        }
-                        throw new Exception($"НЕСУЩЕСТВУЮЩИЙ КАК ОБЪЕКТ: <{Attributes[i]}> ГДЕ-ТО В <{ObjName}>");
-                    }
-                    Result = Value.Evaluated();
-                    classObject.AddAttribute(Attributes.Last().View, Result);
-                    return;
-                }
-            }
-            throw new Exception($"НЕСУЩЕСТВУЮЩИЙ КАК ОБЪЕКТ: <{ObjName}>");
+            object[] result = HelpMe.GetAttrAndValue(ObjName, Attributes, Value);
+            Result = result[2];
+            (result[0] as IClass).AddAttribute(result[1] as string, result[2]);
         }
 
         public object Evaluated()
@@ -899,59 +862,21 @@ namespace VovaScript
             object taked = null;
             IClass toSave = null;
             string attrName = "";
+            object got;
             if (Attrs is null)
+            {
                 taked = Objects.GetVariable(ObjectName.View);
+                got = Slice.Evaluated();
+            }
             else
             {
-                if (Objects.ContainsVariable(ObjectName.View))
-                {
-                    object took = Objects.GetVariable(ObjectName.View);
-                    if (took is IClass)
-                    {
-                        IClass classObject = took as IClass;
-                        IClass last;
-                        for (int i = 0; i < Attrs.Length - 1; i++)
-                        {
-                            if (classObject.ContainsAttribute(Attrs[i].View))
-                            {
-                                took = classObject.GetAttribute(Attrs[i].View);
-                                last = classObject;
-                                if (took is IClass)
-                                {
-                                    classObject = took as IClass;
-                                    continue;
-                                }
-                                if (i == Attrs.Length - 1)
-                                {
-                                    toSave = last;
-                                    attrName = Attrs[i].View;
-                                    taked = last.GetAttribute(attrName);
-                                    break;
-                                }
-                                throw new Exception($"НЕ ОБЪЕКТ: <{Attrs[i]}> ГДЕ-ТО В <{ObjectName}>");
-                            }
-                            if (i == Attrs.Length - 1)
-                            {
-                                toSave = classObject;
-                                attrName = Attrs[i].View;
-                                taked = classObject.GetAttribute(attrName);
-                                break;
-                            }
-                            throw new Exception($"НЕСУЩЕСТВУЮЩИЙ КАК ОБЪЕКТ: <{Attrs[i]}> ГДЕ-ТО В <{ObjectName}>");
-                        }
-                        if (taked is null)
-                        {
-                            toSave = classObject;
-                            attrName = Attrs.Last().View;
-                            taked = classObject.GetAttribute(attrName);
-                        }
-                    }
-                }
-                else
-                    throw new Exception($"НЕСУЩЕСТВУЮЩИЙ КАК ОБЪЕКТ: <{ObjectName}>");
+                object[] result = HelpMe.GetAttrAndValue(ObjectName, Attrs, Slice);
+                toSave = result[0] as IClass;
+                attrName = result[1] as string;
+                got = result[2];
+                taked = toSave.GetAttribute(attrName);
             }
 
-            object got = Slice.Evaluated();
             if (!(got is List<object>) && !(got is string))
                 got = new List<object>() { got };
 

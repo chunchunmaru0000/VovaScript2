@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -117,6 +118,10 @@ namespace VovaScript
         QUOTE,
         [StringValue("ТОЧКА")]
         DOT,
+        [StringValue("ТОЧКАТОЧКА")]
+        DOTDOT,
+        [StringValue("..=")]
+        DOTDOTEQ,
         [StringValue("ЗНАК ВОПРОСА")]
         QUESTION,
 
@@ -159,6 +164,8 @@ namespace VovaScript
         EXACTLY,
         [StringValue("ЗАПОЛНИТЬ")]
         FILL,
+        [StringValue("КОТОРЫЙ/АЯ/ОЕ")]
+        WHICH,
 
         //SQL
         [StringValue("СОЗДАТЬ")]
@@ -253,7 +260,7 @@ namespace VovaScript
         
         public bool ContainsAttribute(string key) => Attributes.ContainsKey(key);
 
-        public object GetAttribute(string key) => ContainsAttribute(key) ? Attributes[key] : Objects.NOTHING;
+        public object GetAttribute(string key) => ContainsAttribute(key) ? Attributes[key] : throw new Exception($"НЕТУ ТАКОГО АТРИБУТА: <{key}> В <{this}>");// Objects.NOTHING;
 
         public void AddAttribute(string key, object value)
         {
@@ -384,7 +391,7 @@ namespace VovaScript
 
         /*        VARIABLES          */
 
-        public static object NOTHING = Convert.ToInt64(0); // need improving i believe
+        public static object NOTHING => Convert.ToInt64(0); // need improving i believe
         public static Stack<Dictionary<string, object>> Registers = new Stack<Dictionary<string, object>>();
         public static Dictionary<string, object> Variables = new Dictionary<string, object>()
         {
@@ -441,7 +448,7 @@ namespace VovaScript
 
         public static bool ContainsVariable(string key) => Variables.ContainsKey(key);
 
-        public static object GetVariable(string key) => ContainsVariable(key) ? Variables[key] : NOTHING;
+        public static object GetVariable(string key) => ContainsVariable(key) ? Variables[key] : throw new Exception($"НЕТУ ТУКОЙ ПЕРЕМЕННОЙ: <{key}>");
 
         public static void AddVariable(string key, object value)
         {

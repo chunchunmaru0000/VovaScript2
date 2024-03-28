@@ -246,6 +246,16 @@ namespace VovaScript
                     return new Token() { View = "%", Value = null, Type = TokenType.MOD };
                 case '.':
                     Next();
+                    if (Current == '.')
+                    {
+                        Next();
+                        if (Current == '=')
+                        {
+                            Next();
+                            return new Token() { View = "..=", Value = null, Type = TokenType.DOTDOTEQ };
+                        }
+                        return new Token() { View = "..", Value = null, Type = TokenType.DOTDOT };
+                    }
                     return new Token() { View = ".", Value = null, Type = TokenType.DOT };
                 case ',':
                     Next();

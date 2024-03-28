@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 
 namespace VovaScript
 {
@@ -95,5 +96,42 @@ namespace VovaScript
         public new string Message;
 
         public VovaScriptException(string message) => Message = message;
+    }
+
+    public static class HelpMe
+    {
+        public static object[] GetAttrAndValue(Token ObjName, Token[] Attributes, IExpression Value)
+        {
+            if (Objects.ContainsVariable(ObjName.View))
+            {
+                object got = Objects.GetVariable(ObjName.View);
+                if (got is IClass)
+                {
+                    IClass classObject = got as IClass;
+                    IClass last;
+                    for (int i = 0; i < Attributes.Length - 1; i++)
+                    {
+                        if (classObject.ContainsAttribute(Attributes[i].View))
+                        {
+                            got = classObject.GetAttribute(Attributes[i].View);
+                            last = classObject;
+                            if (got is IClass)
+                            {
+                                classObject = got as IClass;
+                                continue;
+                            }
+                            if (i == Attributes.Length - 1)
+                                return new object[] { last, Attributes[i].View, Value.Evaluated() };
+                            throw new Exception($"НЕ ОБЪЕКТ: <{Attributes[i]}> ГДЕ-ТО В <{ObjName}>");
+                        }
+                        if (i == Attributes.Length - 1)
+                            return new object[] { classObject, Attributes[i].View, Value.Evaluated() };
+                        throw new Exception($"НЕСУЩЕСТВУЮЩИЙ КАК ОБЪЕКТ: <{Attributes[i]}> ГДЕ-ТО В <{ObjName}>");
+                    }
+                    return new object[] { classObject, Attributes.Last().View, Value.Evaluated() };
+                }
+            }
+            throw new Exception($"НЕСУЩЕСТВУЮЩИЙ КАК ОБЪЕКТ: <{ObjName}>");
+        }
     }
 }
