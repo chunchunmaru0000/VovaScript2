@@ -187,10 +187,14 @@ namespace VovaScript
         SELECT,
         [StringValue("ИЗ")]
         FROM,
+
         [StringValue("ОТ")]
         AT,
         [StringValue("ДО")]
-        TILL,
+        TILL, 
+        [StringValue("ШАГ")]
+        STEP,
+
         [StringValue("КАК")]
         AS,
 
@@ -339,6 +343,8 @@ namespace VovaScript
             { "чаркод", new IClass("_чаркод", new Dictionary<string, object>(), ASCIICode.Cloned()) },
             { "символом", new IClass("_символом", new Dictionary<string, object>(), FromASCIICode.Cloned()) },
             { "чаром", new IClass("_символом", new Dictionary<string, object>(), FromASCIICode.Cloned()) },
+            { "мин", long.MinValue },
+            { "макс", long.MaxValue },
         });
 
         public static IClass IFloat = new IClass("ЯТочка", new Dictionary<string, object>
@@ -352,6 +358,8 @@ namespace VovaScript
             { "чаркод", new IClass("_чаркод", new Dictionary<string, object>(), ASCIICode.Cloned()) },
             { "символом", new IClass("_символом", new Dictionary<string, object>(), FromASCIICode.Cloned()) },
             { "чаром", new IClass("_символом", new Dictionary<string, object>(), FromASCIICode.Cloned()) },
+            { "мин", double.MinValue },
+            { "макс", double.MaxValue },
         });
 
         public static IClass IString = new IClass("ЯСтрока", new Dictionary<string, object>

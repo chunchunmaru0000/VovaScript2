@@ -52,8 +52,7 @@ namespace VovaScript
             List<Token> attrs = null;
             if (Match(TokenType.DOT))
             {
-                attrs = new List<Token>();
-                attrs.Add(Consume(TokenType.VARIABLE));
+                attrs = new List<Token>() { Consume(TokenType.VARIABLE) };
                 while (Match(TokenType.DOT))
                     attrs.Add(Consume(TokenType.VARIABLE));
             }

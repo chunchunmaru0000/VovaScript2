@@ -266,12 +266,18 @@
                 case "из":
                     word.Type = TokenType.FROM;
                     return word;
+
                 case "от":
                     word.Type = TokenType.AT;
                     return word;
                 case "до":
                     word.Type = TokenType.TILL;
                     return word;
+                case "шаг":
+                    word.Type = TokenType.STEP;
+                    return word;
+
+
                 case "как":
                     word.Type = TokenType.AS;
                     return word;

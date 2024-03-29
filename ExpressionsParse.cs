@@ -113,7 +113,10 @@ namespace VovaScript
             IExpression from = Expression();
             Consume(TokenType.TILL);
             IExpression till = Expression();
-            return new RangeExpression(from, till);
+            IExpression step = null;
+            if (Match(TokenType.STEP))
+                step = Expression();
+            return new RangeExpression(from, till, step);
         }
 
         private IExpression Primary()

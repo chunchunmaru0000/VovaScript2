@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 
 namespace VovaScript
@@ -846,33 +847,70 @@ namespace VovaScript
     {
         IExpression From;
         IExpression Till;
+        IExpression Step;
 
-        public RangeExpression(IExpression from, IExpression till)
+        public RangeExpression(IExpression from, IExpression till, IExpression step = null)
         {
             From = from;
             Till = till;
+            Step = step;
         }
 
-        public IExpression Clon() => new RangeExpression(From.Clon(), Till.Clon());
+        public IExpression Clon() => new RangeExpression(From.Clon(), Till.Clon(), Step is null ? null : Step.Clon());
 
         public object Evaluated()
         {
             object from = From.Evaluated();
             object till = Till.Evaluated();
+            int step = 1;
+            if (!(Step is null))
+            {
+                object got = Step.Evaluated();
+                if (got is long || got is double)
+                    step = Convert.ToInt32(got);
+                else
+                    throw new Exception($"ШАГ БЫЛ НЕ ЧИСЛОМ, А: <{got}>");
+            }
+
             if (from is long || from is double && till is long || till is double)
             {
                 int ot = Convert.ToInt32(from);
                 int to = Convert.ToInt32(till);
+
+                List<int> ret = null;
                 if (ot > to)
                 {
                     ot += to;
                     to = ot - to;
                     ot -= to;
-                    return Enumerable.Range(ot, to - ot + 1).Select(r => (object)Convert.ToInt64(r)).Reverse().ToList();
+                    ret = Enumerable.Range(ot, to - ot + 1).Reverse().ToList();
                 }
-                return Enumerable.Range(ot,  to - ot + 1).Select(r => (object)Convert.ToInt64(r)).ToList();
-            }    
-            throw new Exception($"ЗНАЧЕНИЯ <{from}> И <{till}> ИЗ <{From}> И <{Till}> ОКАЗАЛИСЬ НЕ ЧИСЛАМИ");
+                else
+                    ret = Enumerable.Range(ot,  to - ot + 1).ToList();
+                return SliceExpression.SelectStepped(ret, step).Select(r => (object)Convert.ToInt64(r)).ToList();
+            }
+            if (from is string && till is string)
+            {
+                string fromed = from as string;
+                string tilled = till as string;
+                if (fromed.Length == 0 || tilled.Length == 0)
+                    throw new Exception($"СТРОКИ БЫЛИ НЕДОСТАТОЧНЙ ДЛИНЫ В: ОТ <{fromed}> ДО <{tilled}>");
+
+                int ot = fromed[0];
+                int to = tilled[0];
+                List<int> ret = null;
+                if (ot > to)
+                {
+                    ot += to;
+                    to = ot - to;
+                    ot -= to;
+                    ret = Enumerable.Range(ot, to - ot + 1).Reverse().ToList();
+                }
+                else
+                    ret = Enumerable.Range(ot, to - ot + 1).ToList();
+                return string.Join("", SliceExpression.SelectStepped(ret, step).Select(s => (char)s));
+            }
+            throw new Exception($"ЗНАЧЕНИЯ <{from}> И <{till}> ИЗ <{From}> И <{Till}> ОКАЗАЛИСЬ НЕ ЧИСЛАМИ ИЛИ СТРОКАМИ");
         }
 
         public override string ToString() => $"ОТ {From} ДО {Till}";
