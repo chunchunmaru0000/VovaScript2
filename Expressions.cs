@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
+using System.Security.Policy;
 
 namespace VovaScript
 {
@@ -746,9 +747,11 @@ namespace VovaScript
                                                          To is null ? null : To.Clon(),
                                                          Step is null ? null : Step.Clon());
 
+        public static int Len(object taken) => taken is string? Convert.ToString(taken).Length : ((List<object>)taken).Count;
+
         public static int[] Sliced(object slice, int from, int to, object To)
         {
-            int length = slice is string ? Convert.ToString(slice).Length : ((List<object>)slice).Count;
+            int length = Len(slice);
             try
             {
                 if (from < 0)
@@ -810,7 +813,7 @@ namespace VovaScript
             }
 
             object taken = Taken.Evaluated();
-            int length = taken is string ? Convert.ToString(taken).Length : ((List<object>)taken).Count;
+            int length = Len(taken);
 
             int from = DetermineIndex(From);
             int to = To is null ? DetermineIndex(To, length) : To.Evaluated() is string ? from + 1 : DetermineIndex(To);

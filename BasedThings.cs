@@ -457,7 +457,7 @@ namespace VovaScript
 
         public static bool ContainsVariable(string key) => Variables.ContainsKey(key);
 
-        public static object GetVariable(string key) => ContainsVariable(key) ? Variables[key] : throw new Exception($"НЕТУ ТУКОЙ ПЕРЕМЕННОЙ: <{key}>");
+        public static object GetVariable(string key) => ContainsVariable(key) ? Variables[key] : throw new Exception($"НЕТУ ТАКОЙ ПЕРЕМЕННОЙ: <{key}>");
 
         public static void AddVariable(string key, object value)
         {

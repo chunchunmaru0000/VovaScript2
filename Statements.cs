@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -250,24 +249,13 @@ namespace VovaScript
 
         public object Evaluated()
         {
-            while (Convert.ToBoolean(Expression.Evaluated()))
+            try
             {
-                try
-                {
-                    Statement.Execute();
-                }
-                catch (BreakStatement)
-                {
-                    break;
-                }
-                catch (ContinueStatement)
-                {
-                    // continue by itself
-                }
-                catch (ReturnStatement result)
-                {
-                    return result.GetResult();
-                }
+                Execute();
+            }
+            catch (ReturnStatement result)
+            {
+                return result.GetResult();
             }
             throw new Exception($"ЕСЛИ ИСПОЛЬЗОВАТЬ ТАК СТРУКТУРУ <{this}> ТО НАДО ЧТО-ТО ВЕРНУТЬ");
         }
@@ -315,29 +303,129 @@ namespace VovaScript
 
         public object Evaluated()
         {
-            for (Definition.Execute(); Convert.ToBoolean(Condition.Evaluated()); Alter.Execute())
+            try
             {
-                try
-                {
-                    Statement.Execute();
-                }
-                catch (BreakStatement)
-                {
-                    break;
-                }
-                catch (ContinueStatement)
-                {
-                    // continue by itself
-                }
-                catch (ReturnStatement result)
-                {
-                    return result.GetResult();
-                }
+                Execute();
+            }
+            catch (ReturnStatement result)
+            {
+                return result.GetResult();
             }
             throw new Exception($"ЕСЛИ ИСПОЛЬЗОВАТЬ ТАК СТРУКТУРУ <{this}> ТО НАДО ЧТО-ТО ВЕРНУТЬ");
         }
 
         public override string ToString() => $"ДЛЯ {Definition} {Condition} {Alter}: {Statement}";
+    }
+
+    public sealed class ForInStatement : IStatement, IExpression
+    {
+        Token Itter;
+        VarAttrSliceNode VarNode;
+        IExpression Ratio;
+        IStatement Body;
+
+        public ForInStatement(Token itter, VarAttrSliceNode varNode, IExpression ratio, IStatement body)
+        {
+            Itter = itter;
+            VarNode = varNode;
+            Ratio = ratio;
+            Body = body;
+        }
+
+        public IStatement Clone() => new ForInStatement(Itter.Clone(), VarNode, Ratio.Clon(), Body.Clone());
+
+        public IExpression Clon() => new ForInStatement(Itter.Clone(), VarNode, Ratio.Clon(), Body.Clone());
+
+        public void Execute()
+        {
+            List<object> list = new List<object>();
+            int length = 0;
+            if (VarNode.ObjName != Parser.IMPOSSIBLE)
+            {
+                ObjectValue objectValue = HelpMe.GiveMeObject(VarNode.ObjName, VarNode.Attrs, VarNode.Slices);
+                Token nameToken = new Token() { View = objectValue.ObjName };
+
+                for (int i = 0; ; i++)
+                {
+                    try
+                    {
+                        object ratio = Ratio.Evaluated();
+                        list = SliceExpression.Obj2List(ratio);
+                        length = list.Count;
+                        if (i >= length)
+                            break;
+
+                        Objects.AddVariable(Itter.View, list[i]);
+
+                        if (VarNode.ObjName != Parser.IMPOSSIBLE)
+                        {
+                            IExpression iter = new VariableExpression(Itter);
+
+                            if (objectValue.IsItem && objectValue.IsChild)
+                                new SliceAssignStatement(nameToken, VarNode.Slices, VarNode.Attrs, iter, false, false).Execute();
+                            else if (objectValue.IsChild)
+                                new AttributeAssignStatement(nameToken, VarNode.Attrs, iter).Execute();
+                            else if (objectValue.IsItem)
+                                new SliceAssignStatement(VarNode.ObjName, VarNode.Slices, VarNode.Attrs, iter, false, true).Execute();
+                            else
+                                Objects.AddVariable(objectValue.ObjName, list[i]);
+                        }
+
+                        Body.Execute();
+                    }
+                    catch (BreakStatement) { break; }
+                    catch (ContinueStatement) { }
+                    catch (IndexOutOfRangeException) { 
+                        throw new Exception(
+                            $"ОКАЗАЛСЯ ЗА ГРАНИЦАМИ ЛИСТА С ДЛИНОЙ <{length}> НА ИТТЕРАЦИИ {i}\n" +
+                            $"В ЛИСТЕ <{PrintStatement.ListString(list)}>"
+                        ); 
+                    }
+                }
+
+            }
+            else
+            {
+                for (int i = 0; ; i++)
+                {
+                    try
+                    {
+                        object ratio = Ratio.Evaluated();
+                        list = SliceExpression.Obj2List(ratio);
+                        length = list.Count;
+                        if (i >= length)
+                            break;
+
+                        Objects.AddVariable(Itter.View, list[i]);
+                        Body.Execute();
+                    }
+                    catch (BreakStatement) { break; }
+                    catch (ContinueStatement) { }
+                    catch (IndexOutOfRangeException)
+                    {
+                        throw new Exception(
+                            $"ОКАЗАЛСЯ ЗА ГРАНИЦАМИ ЛИСТА С ДЛИНОЙ <{length}> НА ИТТЕРАЦИИ {i}\n" +
+                            $"В ЛИСТЕ <{PrintStatement.ListString(list)}>"
+                        );
+                    }
+                }
+            }
+        }
+
+        public object Evaluated()
+        {
+            try
+            {
+                Execute();
+            }
+            catch (ReturnStatement result)
+            {
+                return result.GetResult();
+            }
+            throw new Exception($"ЕСЛИ ИСПОЛЬЗОВАТЬ ТАК СТРУКТУРУ <{this}> ТО НАДО ЧТО-ТО ВЕРНУТЬ");
+        }
+
+        public override string ToString() => $"ДЛЯ {Itter}" + (VarNode.ObjName == Parser.IMPOSSIBLE ? "" : $"КОТОРЫЙ/АЯ/ОЕ {VarNode}") + $" В {VarNode}{{{Body}}}";
     }
 
     public sealed class BreakStatement : Exception, IStatement, IExpression
@@ -690,9 +778,9 @@ namespace VovaScript
 
         public void Execute() 
         {
-            object[] result = HelpMe.GetAttrAndValue(ObjName, Attributes, Value);
-            Result = result[2];
-            (result[0] as IClass).AddAttribute(result[1] as string, result[2]);
+            ParrentAttrValue result = HelpMe.GiveMeAttrAndValue(ObjName, Attributes, Value);
+            Result = result.Value;
+            result.Parrent.AddAttribute(result.AttrName, result.Value);
         }
 
         public object Evaluated()
@@ -726,46 +814,9 @@ namespace VovaScript
 
         public void Execute()
         {
-            if (Objects.ContainsVariable(ObjName.View))
-            {
-                object got = Objects.GetVariable(ObjName.View);
-                if (got is IClass)
-                {
-                    IClass classObject = got as IClass;
-                    IClass last;
-                    for (int i = 0; i < Attributes.Length - 1; i++)
-                    {
-                        if (classObject.ContainsAttribute(Attributes[i].View))
-                        {
-                            got = classObject.GetAttribute(Attributes[i].View);
-                            last = classObject;
-                            if (got is IClass)
-                            {
-                                classObject = got as IClass;
-                                continue;
-                            }
-                            if (i == Attributes.Length - 1)
-                            {
-                                Result = new IClass(Attributes[i].View, new Dictionary<string, object>(), new UserFunction(Args, Body));
-                                last.AddAttribute(Attributes[i].View, Result);
-                                return;
-                            }
-                            throw new Exception($"НЕ ОБЪЕКТ: <{Attributes[i]}> ГДЕ-ТО В <{ObjName}>");
-                        }
-                        if (i == Attributes.Length - 1)
-                        {
-                            Result = new IClass(Attributes[i].View, new Dictionary<string, object>(), new UserFunction(Args, Body));
-                            classObject.AddAttribute(Attributes[i].View, Result);
-                            return;
-                        }
-                        throw new Exception($"НЕСУЩЕСТВУЮЩИЙ КАК ОБЪЕКТ: <{Attributes[i]}> ГДЕ-ТО В <{ObjName}>");
-                    }
-                    Result = new IClass(Attributes.Last().View, new Dictionary<string, object>(), new UserFunction(Args, Body));
-                    classObject.AddAttribute(Attributes.Last().View, Result);
-                    return;
-                }
-            }
-            throw new Exception($"НЕСУЩЕСТВУЮЩИЙ КАК ОБЪЕКТ: <{ObjName}>");
+            ParrentAttrValue result = HelpMe.GiveMeAttrAndValue(ObjName, Attributes, new NumExpression(""));
+            Result = new IClass(result.AttrName, new Dictionary<string, object>(), new UserFunction(Args, Body));
+            result.Parrent.AddAttribute(result.AttrName, Result);
         }
 
         public object Evaluated()
@@ -809,24 +860,14 @@ namespace VovaScript
 
         public object Evaluated()
         {
-            while (true)
+            try
             {
-                try
-                {
-                    Statement.Execute();
-                }
-                catch (BreakStatement)
-                {
-                    break;
-                }
-                catch (ContinueStatement)
-                {
-                    // continue by itself
-                }
-                catch (ReturnStatement result)
-                {
-                    return result.GetResult();
-                }
+                Execute();
+            }
+
+            catch (ReturnStatement result)
+            {
+                return result.GetResult();
             }
             throw new Exception($"ЕСЛИ ИСПОЛЬЗОВАТЬ ТАК СТРУКТУРУ <{this}> ТО НАДО ЧТО-ТО ВЕРНУТЬ");
         }
@@ -859,10 +900,11 @@ namespace VovaScript
 
         public void Execute()
         {
-            object taked = null;
+            object taked;
             IClass toSave = null;
             string attrName = "";
             object got;
+
             if (Slices is null)
                 throw new Exception($"НЕВЕРНЫЙ СИНТАКСИС, ТАК КАК НЕ БЫЛИ ВВЕДЕНЫ ИНДЕКСЫ РЯДОМ С: <{ObjectName}>");
             if (Attrs is null)
@@ -872,83 +914,18 @@ namespace VovaScript
             }
             else
             {
-                object[] result = HelpMe.GetAttrAndValue(ObjectName, Attrs, Slice);
-                toSave = result[0] as IClass;
-                attrName = result[1] as string;
-                got = result[2];
+                ParrentAttrValue result = HelpMe.GiveMeAttrAndValue(ObjectName, Attrs, Slice);
+                toSave = result.Parrent;
+                attrName = result.AttrName;
+                got = result.Value;
                 taked = toSave.GetAttribute(attrName);
             }
 
-            if (!(got is List<object>) && !(got is string))
-                got = new List<object>() { got };
+            IndecesValue resulted = HelpMe.GiveMeIndecesAndValue(ObjectName, Slices, taked);
+            List<int> assignIndecex = resulted.AssignIndeces;
+            List<object> value = resulted.Value;
 
-            object taken = Enumerable.Range(0, taked is List<object> ? ((List<object>)taked).Count : Convert.ToString(taked).Length).Select(e => (object)e).ToList();
-            int[] indeces = null;
-            foreach (IExpression[] slice in Slices)
-            {
-                if (slice[0] is null && slice[1] is null && slice[2] is null)
-                    continue;
-                int from = SliceExpression.DetermineIndex(slice[0]);
-                int to = slice[1] is null ? SliceExpression.DetermineIndex(slice[1]) : slice[1].Evaluated() is string ? from : SliceExpression.DetermineIndex(slice[1]);
-                int step = SliceExpression.DetermineIndex(slice[2], 1);
-
-                indeces = taken is string || taken is long || taken is double ? SliceExpression.Sliced(Convert.ToString(taken), from, to, slice[1]) :
-                        taken is List<object> ? SliceExpression.Sliced(taken, from, to, slice[1]) :
-                        throw new Exception($"<{ObjectName.View}> НЕ БЫЛ ЛИСТОМ ИЛИ СТРОКОЙ, А <{taken}>");
-                indeces = SliceExpression.SelectStepped(indeces.ToList(), step);
-
-                List<object> beforeStep = SliceExpression.Obj2List(taken);
-                List<object> newArr = new List<object>();
-                foreach (int index in indeces)
-                    newArr.Add(beforeStep[index]);
-                
-                taken = newArr.All(b => b is string) ? (object)string.Join("", newArr) : newArr;
-            }
-            List<int> assignIndecex = SliceExpression.Obj2List(taken).Select(a => Convert.ToInt32(a)).ToList();
-            List<object> value = SliceExpression.Obj2List(taked);
-            List<object> toAssign = SliceExpression.Obj2List(got);
-            bool was = value.All(v => v is string);
-
-            if (Exactly)
-            {
-                if (toAssign.Count != assignIndecex.Count)
-                    throw new Exception($"БЫЛО ИНДЕКСОВ НА НАЗНАЧЕНИЕ <{assignIndecex.Count}> НО В НАЗНАЧЕНИИ ЦЕЛЫХ <{toAssign.Count}>\n{this}");
-
-                for (int i = 0; i < assignIndecex.Count; i++)
-                    value[assignIndecex[i]] = toAssign[i];
-            }
-            else
-            {
-                if (!Fill && Slices.All(s => s[2] is null))
-                {
-                    if (toAssign.Count == assignIndecex.Count)
-                        for (int i = 0; i < assignIndecex.Count; i++)
-                            value[assignIndecex[i]] = toAssign[i];
-                    else
-                    {
-                        List<object> begin = value.Take(assignIndecex[0]).ToList();
-                        value.RemoveRange(assignIndecex[0], assignIndecex.Count);
-                        toAssign.AddRange(value);
-                        begin.AddRange(toAssign);
-                        value = begin;
-                    }
-                }
-                else
-                {
-                    if (toAssign.Count == assignIndecex.Count || toAssign.Count > assignIndecex.Count)
-                        for (int i = 0; i < assignIndecex.Count; i++)
-                            value[assignIndecex[i]] = toAssign[i];
-                    else
-                        for (int i = 0; i < assignIndecex.Count; i++)
-                            value[assignIndecex[i]] = toAssign[i >= toAssign.Count ? toAssign.Count - 1 : i];
-                }
-            }
-            object ret;
-            if (was)
-                ret = string.Join("", value.Select(v => "" + Convert.ToString(v)[0]).ToArray());
-            else
-                ret = value;
-
+            object ret = HelpMe.GiveMeRetOfListAndIndeces(got, assignIndecex, value, Slices, Exactly, Fill);
             if (toSave is null)
                 Objects.AddVariable(ObjectName.View, ret);
             else

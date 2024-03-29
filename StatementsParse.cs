@@ -39,13 +39,6 @@ namespace VovaScript
             return new OperationAssignStatement(variable, operation, expression);
         }
 
-        public struct VarAttrSliceNode
-        {
-            public Token ObjName;
-            public Token[] Attrs;
-            public IExpression[][] Slices;
-        }
-
         public VarAttrSliceNode ParseFullObjNode()
         {
             Token objName = Consume(TokenType.VARIABLE);
@@ -190,28 +183,22 @@ namespace VovaScript
             return new WhileStatement(condition, statement);
         }
 
+        public static Token IMPOSSIBLE = new Token() { View = "НЕ ВОЗ МОЖ НО" };
+
         private IStatement Fory()
         {
-            /*
-            if (Current.Type == TokenType.VARIABLE && Get(1).Type == TokenType.WHICH)
+            if (Current.Type == TokenType.VARIABLE && Get(1).Type == TokenType.WHICH || Get(1).Type == TokenType.IN)
             {
                 Token itterator = Consume(TokenType.VARIABLE);
-                Consume(TokenType.WHICH);
-                IExpression which = Expression();
+                VarAttrSliceNode which = new VarAttrSliceNode() { ObjName = IMPOSSIBLE };
+                if (Match(TokenType.WHICH))
+                    which = ParseFullObjNode();
                 Consume(TokenType.IN);
-                IExpression begin = Expression();
-                bool eq = false;
-                if (Match(TokenType.DOTDOT))
-                    eq = false;
-                else if (Match(TokenType.DOTDOTEQ))
-                    eq = true;
-                else
-                    throw new Exception($"{Near(10)}");
-                IExpression end = Expression();
+                IExpression ratio = Expression();
                 IStatement notBody = OneOrBlock();
-                return new For();
+                return new ForInStatement(itterator, which, ratio, notBody);
             }
-*/
+
             IStatement definition = Assigny();
             IExpression condition = Expression();
             Sep();
