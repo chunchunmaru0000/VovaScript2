@@ -269,6 +269,9 @@
                 case "от":
                     word.Type = TokenType.AT;
                     return word;
+                case "до":
+                    word.Type = TokenType.TILL;
+                    return word;
                 case "как":
                     word.Type = TokenType.AS;
                     return word;

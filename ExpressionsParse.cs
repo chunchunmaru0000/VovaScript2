@@ -108,12 +108,23 @@ namespace VovaScript
             return new LambdaExpression(args.ToArray(), ret);
         }
 
+        private IExpression Rangy()
+        {
+            IExpression from = Expression();
+            Consume(TokenType.TILL);
+            IExpression till = Expression();
+            return new RangeExpression(from, till);
+        }
+
         private IExpression Primary()
         {
             Token current = Current;
 
             if (Match(TokenType.NEW))
                 return Newy();
+
+            if (Match(TokenType.AT))
+                return Rangy();
 
             if (current.Type == TokenType.VARIABLE && Get(1).Type == TokenType.LEFTSCOB)
                 return FuncParsy();

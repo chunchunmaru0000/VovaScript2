@@ -863,6 +863,8 @@ namespace VovaScript
             IClass toSave = null;
             string attrName = "";
             object got;
+            if (Slices is null)
+                throw new Exception($"НЕВЕРНЫЙ СИНТАКСИС, ТАК КАК НЕ БЫЛИ ВВЕДЕНЫ ИНДЕКСЫ РЯДОМ С: <{ObjectName}>");
             if (Attrs is null)
             {
                 taked = Objects.GetVariable(ObjectName.View);

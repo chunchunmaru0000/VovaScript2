@@ -1,5 +1,4 @@
 ﻿using System;
-using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -190,6 +189,8 @@ namespace VovaScript
         FROM,
         [StringValue("ОТ")]
         AT,
+        [StringValue("ДО")]
+        TILL,
         [StringValue("КАК")]
         AS,
 

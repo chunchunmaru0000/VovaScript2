@@ -841,4 +841,40 @@ namespace VovaScript
 
         public override string ToString() => $"{Taken}[{From}:" + To ?? "" + ":" + Step ?? "" + "]";
     }
+
+    public sealed class RangeExpression : IExpression
+    {
+        IExpression From;
+        IExpression Till;
+
+        public RangeExpression(IExpression from, IExpression till)
+        {
+            From = from;
+            Till = till;
+        }
+
+        public IExpression Clon() => new RangeExpression(From.Clon(), Till.Clon());
+
+        public object Evaluated()
+        {
+            object from = From.Evaluated();
+            object till = Till.Evaluated();
+            if (from is long || from is double && till is long || till is double)
+            {
+                int ot = Convert.ToInt32(from);
+                int to = Convert.ToInt32(till);
+                if (ot > to)
+                {
+                    ot += to;
+                    to = ot - to;
+                    ot -= to;
+                    return Enumerable.Range(ot, to - ot + 1).Select(r => (object)Convert.ToInt64(r)).Reverse().ToList();
+                }
+                return Enumerable.Range(ot,  to - ot + 1).Select(r => (object)Convert.ToInt64(r)).ToList();
+            }    
+            throw new Exception($"ЗНАЧЕНИЯ <{from}> И <{till}> ИЗ <{From}> И <{Till}> ОКАЗАЛИСЬ НЕ ЧИСЛАМИ");
+        }
+
+        public override string ToString() => $"ОТ {From} ДО {Till}";
+    }
 }

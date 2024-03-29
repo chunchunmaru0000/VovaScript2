@@ -39,82 +39,94 @@ namespace VovaScript
             return new OperationAssignStatement(variable, operation, expression);
         }
 
-        private IStatement ItemAssigny()
+        public struct VarAttrSliceNode
+        {
+            public Token ObjName;
+            public Token[] Attrs;
+            public IExpression[][] Slices;
+        }
+
+        public VarAttrSliceNode ParseFullObjNode()
         {
             Token objName = Consume(TokenType.VARIABLE);
             List<Token> attrs = null;
             if (Match(TokenType.DOT))
             {
                 attrs = new List<Token>();
-                while (Current.Type != TokenType.LCUBSCOB)
-                {
+                attrs.Add(Consume(TokenType.VARIABLE));
+                while (Match(TokenType.DOT))
                     attrs.Add(Consume(TokenType.VARIABLE));
-                    if (!Match(TokenType.DOT))
-                        if (Current.Type != TokenType.LCUBSCOB && Current.Type != TokenType.VARIABLE)
-                            throw new Exception($"{Near(6)}ОШИБКА СИНТАКИСА РЯДОМ С: {Current}");
-                }
             }
-            
-            List<IExpression[]> slices = new List<IExpression[]>();
-            int i = -1;
-            while (true)
+            List<IExpression[]> slices = null;
+            if (Current.Type == TokenType.LCUBSCOB)
             {
-                i++;
-                slices.Add(new IExpression[3]);
-                if (Match(TokenType.LCUBSCOB))
+                slices = new List<IExpression[]>();
+                int i = -1;
+                while (true)
                 {
-                    IExpression first;
-                    if (Current.Type == TokenType.COLON)
-                        first = null;
-                    else
-                        first = Expression();
-
-                    if (Match(TokenType.COLON))
+                    i++;
+                    slices.Add(new IExpression[3]);
+                    if (Match(TokenType.LCUBSCOB))
                     {
-                        IExpression second;
-                        if (Match(TokenType.RCUBSCOB))
-                        {
-                            slices[i] = new IExpression[3] { first, null, null };
-                            continue;
-                        }
+                        IExpression first;
+                        if (Current.Type == TokenType.COLON)
+                            first = null;
                         else
-                            if (Current.Type == TokenType.COLON)
-                            second = null;
-                        else
-                            second = Expression();
+                            first = Expression();
 
                         if (Match(TokenType.COLON))
                         {
-                            IExpression third;
+                            IExpression second;
                             if (Match(TokenType.RCUBSCOB))
                             {
-                                slices[i] = new IExpression[3] { first, second, null };
+                                slices[i] = new IExpression[3] { first, null, null };
                                 continue;
                             }
                             else
-                                third = Expression();
+                                if (Current.Type == TokenType.COLON)
+                                second = null;
+                            else
+                                second = Expression();
+
+                            if (Match(TokenType.COLON))
+                            {
+                                IExpression third;
+                                if (Match(TokenType.RCUBSCOB))
+                                {
+                                    slices[i] = new IExpression[3] { first, second, null };
+                                    continue;
+                                }
+                                else
+                                    third = Expression();
+
+                                Consume(TokenType.RCUBSCOB);
+                                slices[i] = new IExpression[3] { first, second, third };
+                                continue;
+                            }
 
                             Consume(TokenType.RCUBSCOB);
-                            slices[i] = new IExpression[3] { first, second, third };
+                            slices[i] = new IExpression[3] { first, second, null };
                             continue;
                         }
 
                         Consume(TokenType.RCUBSCOB);
-                        slices[i] = new IExpression[3] { first, second, null };
+                        slices[i] = new IExpression[3] { first, new NumExpression(""), null };
                         continue;
                     }
-
-                    Consume(TokenType.RCUBSCOB);
-                    slices[i] = new IExpression[3] { first, new NumExpression(""), null };
-                    continue;
+                    break;
                 }
-                break;
             }
+            return new VarAttrSliceNode() { ObjName = objName, Attrs = attrs is null ? null : attrs.ToArray(), Slices = slices is null ? null : slices.ToArray() }; 
+        }
+
+        private IStatement ItemAssigny()
+        {
+            VarAttrSliceNode parsed = ParseFullObjNode();
 
             bool exactly = Match(TokenType.EXACTLY);
             bool fill = Match(TokenType.FILL);
             Consume(TokenType.DO_EQUAL, TokenType.ARROW);
-            return new SliceAssignStatement(objName, slices.ToArray(), attrs is null ? null : attrs.ToArray(), Expression(), exactly, fill, Sep());
+            return new SliceAssignStatement(parsed.ObjName, parsed.Slices, parsed.Attrs, Expression(), exactly, fill, Sep());
         }
 
         private IStatement AttMethody()
