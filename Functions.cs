@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
 
 namespace VovaScript
 {
@@ -65,6 +64,7 @@ namespace VovaScript
         public object Evaluated()
         {
             object got = Pool.Evaluated();
+            FunctionExpression borrow = Borrow as FunctionExpression;
             if (got is IClass)
             {
                 IClass classObject = got as IClass;
@@ -78,8 +78,6 @@ namespace VovaScript
                     Console.WriteLine("ДА ПОЧЕМУ ОНО СЮДА ВЕДЕТ");
                     throw new Exception($"НЕ ЯВЛЯЕТСЯ МЕТОДОМ: <{got}> С ИМЕНЕМ <{MethodName.View}>");
                 }
-
-                FunctionExpression borrow = Borrow as FunctionExpression;
 
                 object[] args = borrow.Args.Select(a => a.Evaluated()).ToArray();
                 if (args.Length < method.ArgsCount())
@@ -136,11 +134,12 @@ namespace VovaScript
             if (got is IClass)
             {
                 IClass meth = got as IClass;
+                while (meth.Body is IClass)
+                    meth = meth.Body as IClass;
                 if (meth.Body is UserFunction)
                 {
                     UserFunction userF = meth.Body as UserFunction;
                     Objects.Push();
-                    FunctionExpression borrow = Borrow as FunctionExpression;
                     List<object> args = borrow.Args.Select(a => a.Evaluated()).ToList();
                     args.Insert(0, value);
 
@@ -156,7 +155,9 @@ namespace VovaScript
                     Objects.Pop();
                     return result;
                 }
-                return meth.Execute(new object[] { value });
+                List<object> arges = new List<object> { value };
+                arges.AddRange(borrow.Args.Select(a => a.Evaluated()).ToList());
+                return meth.Execute(arges.ToArray());
             }
             throw new Exception($"МЕТОД <{MethodName}> ОКАЗАЛСЯ НЕ МЕТОДОМ А <{got}>");
         }
@@ -710,5 +711,58 @@ namespace VovaScript
         public IFunction Cloned() => new ToLowerFunction();
 
         public override string ToString() => "НИЗКИМ(<>)";
+    }
+
+    public sealed class MapFunction : IFunction
+    {
+        public object Execute(object[] x)
+        {
+            if (x.Length < 2)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+            object got = x[1];
+            if (got is IClass)
+            {
+                IClass classObject = got as IClass;
+                if (classObject.Body is null)
+                    throw new Exception($"<{x[1]}> НЕ ЯВЛЯЛСЯ ОБЪЕКТОМ ФУНКЦИИ");
+                if (classObject.Body is UserFunction)
+                {
+                    UserFunction lambda = classObject.Body as UserFunction;
+                    int argov = lambda.ArgsCount();
+                    if (argov < 1)
+                        throw new Exception(
+                            $"<{lambda}> ИМЕЛ НЕДОСТАТОЧНО АРГУМЕНТОВ\n" +
+                            $"ВОЗМОЖНЫЙ ПОРЯДОК АРГУМЕНТОВ: элемент, индекс, лист");
+                    bool index = lambda.ArgsCount() > 1;
+                    bool array = lambda.ArgsCount() > 2;
+                    bool wasString = x[0] is string;
+
+                    List<object> listed = x[0] is string || x[0] is List<object> ? SliceExpression.Obj2List(x[0]) : 
+                            throw new Exception($"<{x[0]}> НЕ БЫЛ ЛИСТОМ ИЛИ СТРОКОЙ, А <{x[0]}>");
+                    List<object> list = new List<object>(listed);
+
+                    Objects.Push();
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        Objects.AddVariable(lambda.GetArgName(0), list[i]);
+                        if (index)
+                            Objects.AddVariable(lambda.GetArgName(1), Convert.ToInt64(i));
+                        if (array)
+                            Objects.AddVariable(lambda.GetArgName(2), list);
+
+                        list[i] = lambda.Execute();
+                    }
+                    Objects.Pop();
+
+                    return wasString ? (object)string.Join("", list) : list;
+                }
+                throw new Exception($"<{classObject}> НЕ ДОПУСТИМАЯ ФУНКЦИЯ ДЛЯ ИСПОЛЬЗОВАНИЯ В <{this}>");
+            }
+            throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[1]}> ДЛЯ <{this}>");
+        }
+
+        public IFunction Cloned() => new MapFunction();
+
+        public override string ToString() => $"ПЕРЕБОР(<>)";
     }
 }

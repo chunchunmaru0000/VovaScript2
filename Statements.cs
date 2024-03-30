@@ -106,8 +106,10 @@ namespace VovaScript
         public static string ListString(List<object> list)
         {
             string text = "[";
-            foreach (object item in list)
+            int len = list.Count;
+            for (int i = 0; i < len; i++)
             {
+                object item = list[i];
                 if (item is List<object>)
                     text += ListString((List<object>)item);
                 else if (item is bool)
@@ -121,7 +123,7 @@ namespace VovaScript
                 else
                     text += Convert.ToString(item);
 
-                if (item != list.Last())
+                if (i < len - 1)
                     text += ", ";
             }
             return text + ']';

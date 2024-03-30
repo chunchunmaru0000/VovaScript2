@@ -722,7 +722,17 @@ namespace VovaScript
 
         public IExpression Clon() => new LambdaExpression(Args.Select(a => a.Clone()).ToArray(), Ret.Clon());
 
-        public object Evaluated() => new IClass("лямбдой_был_создан", new Dictionary<string, object>(), new UserFunction(Args, new ReturnStatement(Ret)));
+        public object Evaluated() => new IClass(
+            "лямбдой_был_создан",
+            new Dictionary<string, object>(),
+            new UserFunction(
+                Args,
+                new BlockStatement() { 
+                    Statements = new List<IStatement>() { 
+                        new ReturnStatement(Ret) 
+                    } 
+                } )
+            );
 
         public override string ToString() => $"ЛЯМБДА {PrintStatement.ListString(Args.Select(a => (object)a).ToList())}: {Ret}";
     }
@@ -825,6 +835,8 @@ namespace VovaScript
                 else
                     return "";
 
+            bool wasList = taken is List<object>;
+
             int[] indeces = taken is string || taken is long || taken is double ? Sliced(Convert.ToString(taken), from, to, To) :
                             taken is List<object> ? Sliced(taken, from, to, To) :
                             throw new Exception($"<{Taken}> НЕ БЫЛ ЛИСТОМ ИЛИ СТРОКОЙ, А <{taken}>");
@@ -840,7 +852,7 @@ namespace VovaScript
             foreach (int index in indeces)
                 newArr.Add(beforeStep[index]);
 
-            return newArr.All(b => b is string) ? (object)string.Join("", newArr) : newArr;
+            return wasList ? newArr : (object)string.Join("", newArr);
         }
 
         public override string ToString() => $"{Taken}[{From}:" + To ?? "" + ":" + Step ?? "" + "]";

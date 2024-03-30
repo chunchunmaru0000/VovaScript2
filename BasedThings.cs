@@ -318,6 +318,8 @@ namespace VovaScript
         // methods
         public static IClass Split = new IClass("раздел", new Dictionary<string, object>(), new SplitFunction());
         public static IClass Length = new IClass("длина", new Dictionary<string, object>(), new LenghtFunction());
+        public static IClass Map = new IClass("перебор", new Dictionary<string, object>(), new MapFunction());
+
         public static IClass ASCIICode = new IClass("чаркод", new Dictionary<string, object>(), new ASCIICodeFunction());
         public static IClass FromASCIICode = new IClass("символом", new Dictionary<string, object>(), new FromASCIICodeFunction());
         public static IClass IsUpper = new IClass("высок", new Dictionary<string, object>(), new IsUpperFunction());
@@ -375,6 +377,7 @@ namespace VovaScript
             { "низок", new IClass("_низок", new Dictionary<string, object>(), IsLower.Cloned()) },
             { "высоким", new IClass("_высоким", new Dictionary<string, object>(), ToUpper.Cloned()) },
             { "низким", new IClass("_низким", new Dictionary<string, object>(), ToLower.Cloned()) },
+            { "перебор", new IClass("_перебор", new Dictionary<string, object>(), Map.Cloned()) },
         });
 
         public static IClass IBool = new IClass("ЯПравда", new Dictionary<string, object>
@@ -396,6 +399,7 @@ namespace VovaScript
             { "длина", new IClass("_длина", new Dictionary<string, object>(), Length.Cloned()) },
             { "символом", new IClass("_символом", new Dictionary<string, object>(), FromASCIICode.Cloned()) },
             { "чаром", new IClass("_символом", new Dictionary<string, object>(), FromASCIICode.Cloned()) },
+            { "перебор", new IClass("_перебор", new Dictionary<string, object>(), Map.Cloned()) },
         });
 
         /*        VARIABLES          */
@@ -449,6 +453,7 @@ namespace VovaScript
             { "низок", IsLower },
             { "высоким", ToUpper },
             { "низким", ToLower },
+            { "перебор", Map },
 
             { "вычитать",  ReadAllFile },
             { "писать",  WritingFile.Clone() },
