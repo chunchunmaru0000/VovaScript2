@@ -746,11 +746,13 @@ namespace VovaScript
                     {
                         Objects.AddVariable(lambda.GetArgName(0), list[i]);
                         if (index)
+                        {
                             Objects.AddVariable(lambda.GetArgName(1), Convert.ToInt64(i));
-                        if (array)
-                            Objects.AddVariable(lambda.GetArgName(2), list);
-
-                        list[i] = lambda.Execute();
+                            if (array)
+                                Objects.AddVariable(lambda.GetArgName(2), list);
+                        }
+                        object result = lambda.Execute();
+                        list[i] = result is bool && wasString ? (bool)result ? "Истина" : "Ложь" : result;
                     }
                     Objects.Pop();
 
@@ -764,5 +766,96 @@ namespace VovaScript
         public IFunction Cloned() => new MapFunction();
 
         public override string ToString() => $"ПЕРЕБОР(<>)";
+    }
+
+    public sealed class FilterFunction : IFunction
+    {
+        public object Execute(object[] x)
+        {
+            if (x.Length < 2)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+            object got = x[1];
+            if (got is IClass)
+            {
+                IClass classObject = got as IClass;
+                if (classObject.Body is null)
+                    throw new Exception($"<{x[1]}> НЕ ЯВЛЯЛСЯ ОБЪЕКТОМ ФУНКЦИИ");
+                if (classObject.Body is UserFunction)
+                {
+                    UserFunction lambda = classObject.Body as UserFunction;
+                    int argov = lambda.ArgsCount();
+                    if (argov < 1)
+                        throw new Exception(
+                            $"<{lambda}> ИМЕЛ НЕДОСТАТОЧНО АРГУМЕНТОВ\n" +
+                            $"ВОЗМОЖНЫЙ ПОРЯДОК АРГУМЕНТОВ: элемент, индекс, лист");
+                    bool index = lambda.ArgsCount() > 1;
+                    bool array = lambda.ArgsCount() > 2;
+                    bool wasString = x[0] is string;
+
+                    List<object> listed = x[0] is string || x[0] is List<object> ? SliceExpression.Obj2List(x[0]) :
+                            throw new Exception($"<{x[0]}> НЕ БЫЛ ЛИСТОМ ИЛИ СТРОКОЙ, А <{x[0]}>");
+                    List<object> list = new List<object>();
+
+                    Objects.Push();
+                    for (int i = 0; i < listed.Count; i++)
+                    {
+                        Objects.AddVariable(lambda.GetArgName(0), listed[i]);
+                        if (index)
+                        {
+                            Objects.AddVariable(lambda.GetArgName(1), Convert.ToInt64(i));
+                            if (array)
+                                Objects.AddVariable(lambda.GetArgName(2), listed);
+                        }
+                        object result = lambda.Execute();
+
+                        bool getting;
+                        if (result is bool)
+                            getting = (bool)result;
+                        else if (result is string)
+                            getting = ((string)result).Length != 0;
+                        else if (result is List<object>)
+                            getting = ((List<object>)result).Count != 0;
+                        else if (result is long)
+                            getting = (long)result != 0;
+                        else if (result is double)
+                            getting = (double)result != 0;
+                        else
+                            getting = result is IClass;
+
+                        if (getting)
+                            list.Add(listed[i]);
+                    }
+                    Objects.Pop();
+
+                    return wasString ? (object)string.Join("", list) : list;
+                }
+                throw new Exception($"<{classObject}> НЕ ДОПУСТИМАЯ ФУНКЦИЯ ДЛЯ ИСПОЛЬЗОВАНИЯ В <{this}>");
+            }
+            throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[1]}> ДЛЯ <{this}>");
+        }
+
+        public IFunction Cloned() => new FilterFunction();
+
+        public override string ToString() => $"ФИЛЬТР(<>)";
+    }
+
+    public sealed class ListingFunction : IFunction
+    {
+        public object Execute(object[] x)
+        {
+            if (x.Length == 0)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+            if (x[0] is List<object>)
+                return x[0];
+            if (x[0] is string || x[0] is double || x[0] is long)
+                return Convert.ToString(x[0]).ToCharArray().Select(c => (object)Convert.ToString(c)).ToList();
+            if (x[0] is bool)
+                return (((bool)x[0]) ? "Истина" : "Ложь").ToCharArray().Select(c => (object)Convert.ToString(c)).ToList();
+            throw new Exception($"КОНВЕРТАЦИЯ НЕ УДАЛАСЬ: <{x[0]}>");
+        }
+
+        public IFunction Cloned() => new ListingFunction();
+
+        public override string ToString() => "ЛИСТОМ(<>)";
     }
 }

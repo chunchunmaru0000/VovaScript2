@@ -813,46 +813,50 @@ namespace VovaScript
 
         public object Evaluated()
         {
-            if (!(To is null) && To.Evaluated() is string)
+            try
             {
-                object took = Taken.Evaluated();
-                if (took is List<object>)
-                    return ((List<object>)took)[DetermineIndex(From)];
-                else
-                    return Convert.ToString((Convert.ToString(took))[DetermineIndex(From)]);
-            }
+                if (!(To is null) && To.Evaluated() is string)
+                {
+                    object took = Taken.Evaluated();
+                    if (took is List<object>)
+                        return ((List<object>)took)[DetermineIndex(From)];
+                    else
+                        return Convert.ToString((Convert.ToString(took))[DetermineIndex(From)]);
+                }
 
-            object taken = Taken.Evaluated();
-            int length = Len(taken);
+                object taken = Taken.Evaluated();
+                int length = Len(taken);
 
-            int from = DetermineIndex(From);
-            int to = To is null ? DetermineIndex(To, length) : To.Evaluated() is string ? from + 1 : DetermineIndex(To);
-            int step = DetermineIndex(Step, 1);
+                int from = DetermineIndex(From);
+                int to = To is null ? DetermineIndex(To, length) : To.Evaluated() is string ? from + 1 : DetermineIndex(To);
+                int step = DetermineIndex(Step, 1);
 
-            if (from == to)
-                if (taken is List<object>)
-                    return new List<object>();
-                else
-                    return "";
+                if (from == to)
+                    if (taken is List<object>)
+                        return new List<object>();
+                    else
+                        return "";
 
-            bool wasList = taken is List<object>;
+                bool wasList = taken is List<object>;
 
-            int[] indeces = taken is string || taken is long || taken is double ? Sliced(Convert.ToString(taken), from, to, To) :
-                            taken is List<object> ? Sliced(taken, from, to, To) :
-                            throw new Exception($"<{Taken}> НЕ БЫЛ ЛИСТОМ ИЛИ СТРОКОЙ, А <{taken}>");
-            indeces = SelectStepped(indeces.ToList(), step);
+                int[] indeces = taken is string || taken is long || taken is double ? Sliced(Convert.ToString(taken), from, to, To) :
+                                taken is List<object> ? Sliced(taken, from, to, To) :
+                                throw new Exception($"<{Taken}> НЕ БЫЛ ЛИСТОМ ИЛИ СТРОКОЙ, А <{taken}>");
+                indeces = SelectStepped(indeces.ToList(), step);
 
-            if (indeces.Length == 1)
-                taken = taken is string ? ((string)taken)[indeces[0]] : taken is List<object> ? taken : new List<object>() { taken };
+                if (indeces.Length == 1)
+                    taken = taken is string ? ((string)taken)[indeces[0]] : taken is List<object> ? taken : new List<object>() { taken };
             
-            List<object> beforeStep = Obj2List(taken);
-            //Console.WriteLine("indeces " + PrintStatement.ListString(indeces.Select(i => (object)i).ToList()));
-            //Console.WriteLine("items   " + PrintStatement.ListString(beforeStep.Select(i => (object)i).ToList()));
-            List<object> newArr = new List<object>();
-            foreach (int index in indeces)
-                newArr.Add(beforeStep[index]);
+                List<object> beforeStep = Obj2List(taken);
+                //Console.WriteLine("indeces " + PrintStatement.ListString(indeces.Select(i => (object)i).ToList()));
+                //Console.WriteLine("items   " + PrintStatement.ListString(beforeStep.Select(i => (object)i).ToList()));
+                List<object> newArr = new List<object>();
+                foreach (int index in indeces)
+                    newArr.Add(beforeStep[index]);
 
-            return wasList ? newArr : (object)string.Join("", newArr);
+                return wasList ? newArr : (object)string.Join("", newArr);
+            }
+            catch (ArgumentOutOfRangeException) { throw new Exception("ОКАЗАЛСЯ ЗА ГРАНИЦАМИ ЛИСТА"); }
         }
 
         public override string ToString() => $"{Taken}[{From}:" + To ?? "" + ":" + Step ?? "" + "]";

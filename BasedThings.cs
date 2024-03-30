@@ -281,14 +281,28 @@ namespace VovaScript
 
         public override string ToString() 
         {
-            if (ContainsAttribute("строкой"))
+            switch (Name)
             {
-                object strokoi = GetAttribute("строкой");
-                if (strokoi is IClass)
-                    if (!(((IClass)strokoi).Body is null))
-                        return Convert.ToString(((IClass)strokoi).Body.Execute());
+                case "ЯЧисло":
+                    return $"<ЯЧисло>";
+                case "ЯСтрока":
+                    return $"<ЯСтрока>";
+                case "ЯТочка":
+                    return $"<ЯТочка>";
+                case "ЯЛист":
+                    return $"<ЯЛист>";
+                case "ЯПравда":
+                    return $"<ЯПравда>";
+                default:
+                    if (ContainsAttribute("строкой"))
+                    {
+                        object strokoi = GetAttribute("строкой");
+                        if (strokoi is IClass)
+                            if (!(((IClass)strokoi).Body is null))
+                                return Convert.ToString(((IClass)strokoi).Body.Execute());
+                    }
+                    return $"<ОБЬЕКТ КЛАССА {Name}>";
             }
-            return $"<ОБЬЕКТ КЛАССА {Name}>";
         }
     }
 
@@ -319,6 +333,7 @@ namespace VovaScript
         public static IClass Split = new IClass("раздел", new Dictionary<string, object>(), new SplitFunction());
         public static IClass Length = new IClass("длина", new Dictionary<string, object>(), new LenghtFunction());
         public static IClass Map = new IClass("перебор", new Dictionary<string, object>(), new MapFunction());
+        public static IClass Filter = new IClass("фильтр", new Dictionary<string, object>(), new FilterFunction());
 
         public static IClass ASCIICode = new IClass("чаркод", new Dictionary<string, object>(), new ASCIICodeFunction());
         public static IClass FromASCIICode = new IClass("символом", new Dictionary<string, object>(), new FromASCIICodeFunction());
@@ -331,6 +346,7 @@ namespace VovaScript
         public static IClass Stringing = new IClass("строчить", new Dictionary<string, object>(), new StringingFunction());
         public static IClass Inting = new IClass("числить", new Dictionary<string, object>(), new IntingFunction());
         public static IClass Doubling = new IClass("точить", new Dictionary<string, object>(), new DoublingFunction());
+        public static IClass Listing = new IClass("листить", new Dictionary<string, object>(), new ListingFunction());
 
         /*           TYPES           */
 
@@ -376,8 +392,11 @@ namespace VovaScript
             { "высок", new IClass("_высок", new Dictionary<string, object>(), IsUpper.Cloned()) },
             { "низок", new IClass("_низок", new Dictionary<string, object>(), IsLower.Cloned()) },
             { "высоким", new IClass("_высоким", new Dictionary<string, object>(), ToUpper.Cloned()) },
+            { "большим", new IClass("_высоким", new Dictionary<string, object>(), ToUpper.Cloned()) },
             { "низким", new IClass("_низким", new Dictionary<string, object>(), ToLower.Cloned()) },
             { "перебор", new IClass("_перебор", new Dictionary<string, object>(), Map.Cloned()) },
+            { "фильтр", new IClass("_фильтр", new Dictionary<string, object>(), Filter.Cloned()) },
+            { "листом", new IClass("_листом", new Dictionary<string, object>(), Listing.Cloned()) },
         });
 
         public static IClass IBool = new IClass("ЯПравда", new Dictionary<string, object>
@@ -400,6 +419,7 @@ namespace VovaScript
             { "символом", new IClass("_символом", new Dictionary<string, object>(), FromASCIICode.Cloned()) },
             { "чаром", new IClass("_символом", new Dictionary<string, object>(), FromASCIICode.Cloned()) },
             { "перебор", new IClass("_перебор", new Dictionary<string, object>(), Map.Cloned()) },
+            { "фильтр", new IClass("_фильтр", new Dictionary<string, object>(), Filter.Cloned()) },
         });
 
         /*        VARIABLES          */
@@ -454,6 +474,8 @@ namespace VovaScript
             { "высоким", ToUpper },
             { "низким", ToLower },
             { "перебор", Map },
+            { "фильтр", Filter },
+            { "листить", Listing },
 
             { "вычитать",  ReadAllFile },
             { "писать",  WritingFile.Clone() },
