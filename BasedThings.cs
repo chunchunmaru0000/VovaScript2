@@ -334,6 +334,8 @@ namespace VovaScript
         public static IClass Length = new IClass("длина", new Dictionary<string, object>(), new LenghtFunction());
         public static IClass Map = new IClass("перебор", new Dictionary<string, object>(), new MapFunction());
         public static IClass Filter = new IClass("фильтр", new Dictionary<string, object>(), new FilterFunction());
+        public static IClass Append = new IClass("добавить", new Dictionary<string, object>(), new AppendFunction());
+        public static IClass DeleteItem = new IClass("удалить", new Dictionary<string, object>(), new DeleteItemFunction());
 
         public static IClass ASCIICode = new IClass("чаркод", new Dictionary<string, object>(), new ASCIICodeFunction());
         public static IClass FromASCIICode = new IClass("символом", new Dictionary<string, object>(), new FromASCIICodeFunction());
@@ -420,6 +422,10 @@ namespace VovaScript
             { "чаром", new IClass("_символом", new Dictionary<string, object>(), FromASCIICode.Cloned()) },
             { "перебор", new IClass("_перебор", new Dictionary<string, object>(), Map.Cloned()) },
             { "фильтр", new IClass("_фильтр", new Dictionary<string, object>(), Filter.Cloned()) },
+            { "добавь", new IClass("_добавить", new Dictionary<string, object>(), Append.Cloned()) },
+            { "добавить", new IClass("_добавить", new Dictionary<string, object>(), Append.Cloned()) },
+            { "удали", new IClass("_удалить", new Dictionary<string, object>(), DeleteItem.Cloned()) },
+            { "удалить", new IClass("_удалить", new Dictionary<string, object>(), DeleteItem.Cloned()) },
         });
 
         /*        VARIABLES          */
@@ -476,6 +482,8 @@ namespace VovaScript
             { "перебор", Map },
             { "фильтр", Filter },
             { "листить", Listing },
+            { "добавить", Append },
+            { "удалить", DeleteItem },
 
             { "вычитать",  ReadAllFile },
             { "писать",  WritingFile.Clone() },

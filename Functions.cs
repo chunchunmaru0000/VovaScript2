@@ -858,4 +858,58 @@ namespace VovaScript
 
         public override string ToString() => "ЛИСТОМ(<>)";
     }
+
+    public sealed class AppendFunction : IFunction
+    {
+        public object Execute(object[] x)
+        {
+            if (x.Length < 2)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+            if (x[0] is List<object>)
+            {
+                if (x.Length == 2)
+                    ((List<object>)x[0]).Add(x[1]);
+                else
+                    ((List<object>)x[0]).AddRange(x.Skip(1));
+                
+                return x[0];
+            }
+            throw new Exception($"НЕВЕРНЫЙ ОБЪЕКТ <{x[0]}> ДЛЯ <{this}>");
+        }
+
+        public IFunction Cloned() => new AppendFunction();
+
+        public override string ToString() => "ДОБАВИТЬ(<>)";
+    }
+
+    public sealed class DeleteItemFunction : IFunction
+    {
+        public object Execute(object[] x)
+        {
+            if (x.Length < 2)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+            if (x[0] is List<object>)
+            {
+                try
+                {
+                    if (x.Length == 2)
+                        ((List<object>)x[0]).RemoveAt(HelpMe.GiveMeSafeInt(x[1]));
+                    else
+                        ((List<object>)x[0]).RemoveRange(
+                            HelpMe.GiveMeSafeInt(x[1]),
+                            HelpMe.GiveMeSafeInt(x[2]));
+                    return x[0];
+                }
+                catch(ArgumentException)
+                {
+                    throw new Exception("ВИДИМО БЫЛО УДАЛЕНО СЛИШКОМ МНОГО ЭЛЕМЕНТОВ");
+                }
+            }
+            throw new Exception($"НЕВЕРНЫЙ ОБЪЕКТ <{x[0]}> ДЛЯ <{this}>");
+        }
+
+        public IFunction Cloned() => new DeleteItemFunction();
+
+        public override string ToString() => "УДАЛИТЬ(<>)";
+    }
 }

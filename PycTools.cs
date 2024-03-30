@@ -308,5 +308,7 @@ namespace VovaScript
             }
             throw new Exception("ФВАПЫАПРШОЩЖВАПЫОЫВАРАПРВАПРВПАРВПРОВПРОШЩЖВААПРТОЛДЮАПРВАПРЛДЬЖЖВАПРФВОЩЗАПОЫПВАПОЫ");
         }
+
+        public static int GiveMeSafeInt(object x) => x is long || x is double ? Convert.ToInt32(x) : throw new Exception($"БЫЛ НЕ ЧИСЛОМ, А <{x}>");
     }
 }
