@@ -165,6 +165,8 @@ namespace VovaScript
         FILL,
         [StringValue("КОТОРЫЙ/АЯ/ОЕ")]
         WHICH,
+        [StringValue("ВКЛЮЧИТЬ")]
+        IMPORT,
 
         //SQL
         [StringValue("СОЗДАТЬ")]

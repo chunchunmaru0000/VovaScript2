@@ -57,6 +57,13 @@
                     word.Type = TokenType.THIS;
                     return word;
 
+                case "включить":
+                    word.Type = TokenType.IMPORT;
+                    return word;
+                case "включи":
+                    word.Type = TokenType.IMPORT;
+                    return word;
+
                 case "пока":
                     word.Type = TokenType.WORD_WHILE;
                     return word;

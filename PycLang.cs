@@ -12,6 +12,7 @@ namespace VovaScript
         public static bool PrintProgram = false;//
         public static bool Debug = false;//
         public static bool TimePrint = true;
+        public static string Directory = "";
         public static void LogTokens(ref Token[] tokens)
         {
             Console.ForegroundColor = ConsoleColor.Cyan;
@@ -37,8 +38,9 @@ namespace VovaScript
             Console.ResetColor();
         }
 
-        public static void PycOnceLoad(string code)
+        public static void PycOnceLoad(string code, string dir)
         {
+            Directory = dir;
             try {
                 Stopwatch stopwatch = new Stopwatch();
                 stopwatch.Start();
@@ -87,7 +89,7 @@ namespace VovaScript
                         Console.WriteLine(Tokens ? "Истина" : "Ложь");
                         break;
                     default:
-                        PycOnceLoad(code);
+                        PycOnceLoad(code, Directory);
                         break;
                 }
             }

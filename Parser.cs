@@ -165,6 +165,9 @@ namespace VovaScript
             if (Match(TokenType.VOVASCRIPT))
                 return Pycy();
 
+            if (Match(TokenType.IMPORT))
+                return Importy();
+
             if (Match(TokenType.CLASS))
                 return Classy();
 

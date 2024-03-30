@@ -310,6 +310,16 @@ namespace VovaScript
             throw new Exception($"{Near(6)}ОБЬЯВЛЕНИЕ ТЕЛА КЛАССА МОЖЕТ БЫТЬ ТОЛЬКО В СКОБКАХ");
         }
 
+        public IStatement Importy()
+        {
+            List<Token> path = new List<Token>();
+            path.Add(Consume(TokenType.VARIABLE));
+            while (Match(TokenType.DOT))
+                path.Add(Consume(TokenType.VARIABLE));
+            Sep();
+            return new ImportStatement(path.ToArray());
+        }
+
         public IStatement SQLCreateDatabasy()
         {
             Consume(TokenType.CREATE);

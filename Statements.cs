@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.IO;
 
 namespace VovaScript
 {
@@ -678,7 +679,7 @@ namespace VovaScript
         public void Execute()
         {
             string code = Convert.ToString(Program.Evaluated());
-            VovaScript2.PycOnceLoad(code);
+            VovaScript2.PycOnceLoad(code, VovaScript2.Directory);
         }
 
         public object Evaluated()
@@ -686,7 +687,7 @@ namespace VovaScript
             string code = Convert.ToString(Program.Evaluated());
             try
             {
-                VovaScript2.PycOnceLoad(code);
+                VovaScript2.PycOnceLoad(code, VovaScript2.Directory);
             }
             catch (ReturnStatement result)
             {
@@ -941,5 +942,46 @@ namespace VovaScript
         }
 
         public override string ToString() => $"{ObjectName}" + (Attrs is null ? "" : $".{PrintStatement.ListString(Attrs.Select(a => (object)a).ToList())})") + $" = {Slice};";
+    }
+
+    public sealed class ImportStatement : IStatement, IExpression
+    {
+        Token[] Path;
+        object Result = "";
+
+        public ImportStatement(Token[] path) => Path = path;
+
+        public IStatement Clone() => new ImportStatement(Path);
+
+        public IExpression Clon() => new ImportStatement(Path);
+
+        public void Execute()
+        {
+            string dir = VovaScript2.Directory;
+            List<string> folds = dir.Split('\\').ToList();
+            folds = folds.Take(folds.Count - 1).ToList();
+            folds.AddRange(Path.Select(p => p.View));
+            string filename = string.Join("\\", folds) + ".pyclan";
+
+            if (File.Exists(filename))
+            {
+                bool timeWas = VovaScript2.TimePrint;
+                VovaScript2.TimePrint = false;
+                string code = string.Join(" ", File.ReadAllLines(filename));
+                VovaScript2.PycOnceLoad(code, dir);
+                VovaScript2.TimePrint = timeWas;
+                Result = code;
+            }
+            else
+                throw new Exception("НЕ СУЩЕСТВУЮЦИЙ МОДУЛЬ В " + filename);
+        }
+
+        public object Evaluated()
+        {
+            Execute();
+            return Result;
+        }
+
+        public override string ToString() => $"ВКЛЮЧИТЬ {string.Join(".", Path.Select(p => p.View))}";
     }
 }
