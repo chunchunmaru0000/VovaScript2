@@ -309,7 +309,7 @@
                 case "где":
                     word.Type = TokenType.WHERE;
                     return word;
-
+                    
                 default:
                     word.Type = TokenType.VARIABLE;
                     return word;

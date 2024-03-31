@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.Linq;
-using System.Security.Policy;
+using System.Xml.Schema;
 
 namespace VovaScript
 {
@@ -106,14 +105,16 @@ namespace VovaScript
                     else 
                         return -(double)value;
                 case TokenType.NOT:
+                    if (value is bool)
+                        return !(bool)value;
                     if (value is string)
-                        return !(Convert.ToString(value).Length != 0);
+                        return Convert.ToString(value).Length == 0;
                     if (value is long || value is double)
-                        return !(Convert.ToDouble(value) != 0);
+                        return Convert.ToDouble(value) == 0;
                     if (value is List<object>)
-                        return !(((List<object>)value).Count != 0);
+                        return ((List<object>)value).Count == 0;
                     
-                    throw new Exception($"НЕВОЗМОЖНЫЙ ОБЪЕКТ <{value}> ДЛЯ ОПЕРАЦИИ <{Operation.Type}>");
+                    throw new Exception($"НЕВОЗМОЖНЫЙ ОБЪЕКТ <" + (value is bool ? (bool)value ? "Истина" : "Ложь" : value) + $"> ДЛЯ ОПЕРАЦИИ <{Operation}>");
                 default:
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine($"<{Value.Evaluated()}> <{Value}> <{Operation}> <{Operation.View}>");
@@ -143,6 +144,12 @@ namespace VovaScript
         {
             object lft = Left.Evaluated();
             object rght = Right.Evaluated();
+
+            if (lft is List<object>)
+                lft = Convert.ToInt64(((List<object>)lft).Count);
+            if (rght is List<object>)
+                rght = Convert.ToInt64(((List<object>)rght).Count);
+
             if (lft is IClass || rght is IClass)
             {
                 if (!(lft is IClass) || !(rght is IClass))
@@ -335,6 +342,17 @@ namespace VovaScript
         {
             object olft = Left.Evaluated();
             object orght = Right.Evaluated();
+
+            if (olft is bool && (orght is long || orght is double))
+                olft = Convert.ToDouble(olft);
+            if (orght is bool && (olft is long || olft is double))
+                orght = Convert.ToDouble(orght);
+
+            if (olft is bool && orght is string)
+                orght = Convert.ToString(orght).Length != 0;
+            if (orght is bool && olft is string)
+                olft = Convert.ToString(olft).Length != 0;
+
             if (olft is string || orght is string) 
             {
                 string slft = Convert.ToString(olft);
@@ -807,8 +825,9 @@ namespace VovaScript
             return common;
         }
 
-        public static List<object> Obj2List(object taken) => taken is string ?
+        public static List<object> Obj2List(object taken) => taken is string || taken is double || taken is long ?
                                           Convert.ToString(taken).ToCharArray().Select(c => (object)Convert.ToString(c)).ToList() :
+                                          taken is bool ? (bool)taken ? new List<object>() { "И", "с", "т", "и", "н", "а" } : new List<object>() { "Л", "о", "ж", "ь" } : 
                                           (List<object>)taken;
 
         public object Evaluated()
@@ -818,10 +837,12 @@ namespace VovaScript
                 if (!(To is null) && To.Evaluated() is string)
                 {
                     object took = Taken.Evaluated();
+                    int index = DetermineIndex(From);
+                    int len = Len(took);
                     if (took is List<object>)
-                        return ((List<object>)took)[DetermineIndex(From)];
+                        return ((List<object>)took)[index < 0 ? len + index : index];
                     else
-                        return Convert.ToString((Convert.ToString(took))[DetermineIndex(From)]);
+                        return Convert.ToString(Convert.ToString(took)[index < 0 ? len + index : index]);
                 }
 
                 object taken = Taken.Evaluated();
@@ -845,7 +866,7 @@ namespace VovaScript
                 indeces = SelectStepped(indeces.ToList(), step);
 
                 if (indeces.Length == 1)
-                    taken = taken is string ? ((string)taken)[indeces[0]] : taken is List<object> ? taken : new List<object>() { taken };
+                    taken = taken is string ? Convert.ToString(((string)taken)[indeces[0]]) : taken is List<object> ? taken : new List<object>() { taken };
             
                 List<object> beforeStep = Obj2List(taken);
                 //Console.WriteLine("indeces " + PrintStatement.ListString(indeces.Select(i => (object)i).ToList()));
@@ -857,6 +878,7 @@ namespace VovaScript
                 return wasList ? newArr : (object)string.Join("", newArr);
             }
             catch (ArgumentOutOfRangeException) { throw new Exception("ОКАЗАЛСЯ ЗА ГРАНИЦАМИ ЛИСТА"); }
+            catch (IndexOutOfRangeException) { throw new Exception("ОКАЗАЛСЯ ЗА ГРАНИЦАМИ ЛИСТА"); }
         }
 
         public override string ToString() => $"{Taken}[{From}:" + To ?? "" + ":" + Step ?? "" + "]";

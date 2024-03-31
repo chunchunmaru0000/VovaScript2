@@ -40,12 +40,12 @@ namespace VovaScript
                 string word = code.Substring(start, position - start);
                 return new Token() { View = word, Value = null, Type = TokenType.WHITESPACE };
             }
-            if (Current == '"')
+            if (Current == '"' || Current == '\'')
             {
                 if (!commented) {
                     Next();
                     string buffer = "";
-                    while (Current != '"')
+                    while (Current != '"' || Current != '\'')
                     {
                         while (true) { 
                             if (Current == '\\')
@@ -73,7 +73,7 @@ namespace VovaScript
                             }
                             break; 
                         }
-                        if (Current == '"')
+                        if (Current == '"' || Current == '\'')
                             break;
 
                         buffer += Current;

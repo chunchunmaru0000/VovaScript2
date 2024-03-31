@@ -340,6 +340,9 @@ namespace VovaScript
         public static IClass Filter = new IClass("фильтр", new Dictionary<string, object>(), new FilterFunction());
         public static IClass Append = new IClass("добавить", new Dictionary<string, object>(), new AppendFunction());
         public static IClass DeleteItem = new IClass("удалить", new Dictionary<string, object>(), new DeleteItemFunction());
+        public static IClass JoinedBy = new IClass("соединен", new Dictionary<string, object>(), new JoinedByFunction());
+        public static IClass Sort = new IClass("порядком", new Dictionary<string, object>(), new SortFunction());
+        public static IClass Contains = new IClass("содержит", new Dictionary<string, object>(), new ContainsFunction());
 
         public static IClass ASCIICode = new IClass("чаркод", new Dictionary<string, object>(), new ASCIICodeFunction());
         public static IClass FromASCIICode = new IClass("символом", new Dictionary<string, object>(), new FromASCIICodeFunction());
@@ -348,7 +351,7 @@ namespace VovaScript
         public static IClass ToUpper = new IClass("высоким", new Dictionary<string, object>(), new ToUpperFunction());
         public static IClass ToLower = new IClass("низким", new Dictionary<string, object>(), new ToLowerFunction());
         public static IClass Joined = new IClass("соединить", new Dictionary<string, object>(), new JoinedFunction());
-        public static IClass JoinedBy = new IClass("соединен", new Dictionary<string, object>(), new JoinedByFunction());
+        public static IClass Reverse = new IClass("обратно", new Dictionary<string, object>(), new ReverseFunction());
         
         // to type
         public static IClass Stringing = new IClass("строчить", new Dictionary<string, object>(), new StringingFunction());
@@ -407,6 +410,14 @@ namespace VovaScript
             { "листом", new IClass("_листом", new Dictionary<string, object>(), Listing.Cloned()) },
             { "соедини", new IClass("_соединить", new Dictionary<string, object>(), Joined.Cloned()) },
             { "соединить", new IClass("_соединить", new Dictionary<string, object>(), Joined.Cloned()) },
+            { "обратно", new IClass("_обратно", new Dictionary<string, object>(), Reverse.Cloned()) },
+            { "порядком", new IClass("_порядком", new Dictionary<string, object>(), Sort.Cloned()) },
+            { "порядок", new IClass("_порядком", new Dictionary<string, object>(), Sort.Cloned()) },
+            { "сорт", new IClass("_порядком", new Dictionary<string, object>(), Sort.Cloned()) },
+            { "содержит", new IClass("_содержит", new Dictionary<string, object>(), Contains.Cloned()) },
+            { "имеет", new IClass("_содержит", new Dictionary<string, object>(), Contains.Cloned()) },
+            { "раздел", new IClass("_раздел", new Dictionary<string, object>(), Split.Cloned()) },
+            { "сплит", new IClass("_сплит", new Dictionary<string, object>(), Split.Cloned()) },
         });
 
         public static IClass IBool = new IClass("ЯПравда", new Dictionary<string, object>
@@ -436,6 +447,12 @@ namespace VovaScript
             { "удалить", new IClass("_удалить", new Dictionary<string, object>(), DeleteItem.Cloned()) },
             { "соединен", new IClass("_соединен", new Dictionary<string, object>(), JoinedBy.Cloned()) },
             { "соединён", new IClass("_соединен", new Dictionary<string, object>(), JoinedBy.Cloned()) },
+            { "обратно", new IClass("_обратно", new Dictionary<string, object>(), Reverse.Cloned()) },
+            { "порядком", new IClass("_порядком", new Dictionary<string, object>(), Sort.Cloned()) },
+            { "порядок", new IClass("_порядком", new Dictionary<string, object>(), Sort.Cloned()) },
+            { "сорт", new IClass("_порядком", new Dictionary<string, object>(), Sort.Cloned()) },
+            { "содержит", new IClass("_содержит", new Dictionary<string, object>(), Contains.Cloned()) },
+            { "имеет", new IClass("_содержит", new Dictionary<string, object>(), Contains.Cloned()) },
         });
 
         /*        VARIABLES          */
@@ -498,6 +515,10 @@ namespace VovaScript
             { "соединить", Joined.Clone() },
             { "соединен", JoinedBy.Clone() },
             { "соединён", JoinedBy.Clone() },
+            { "обратно", Reverse },
+            { "порядком", Sort },
+            { "иеет", Contains.Clone() },
+            { "содержит", Contains.Clone() },
 
             { "вычитать",  ReadAllFile },
             { "писать",  WritingFile.Clone() },

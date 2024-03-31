@@ -145,9 +145,9 @@ namespace VovaScript
             ElsePart = elseStatement;
         }
 
-        public IExpression Clon() => new IfStatement(Expression.Clon(), IfPart.Clone(), ElsePart.Clone());
+        public IExpression Clon() => new IfStatement(Expression.Clon(), IfPart.Clone(), ElsePart is null ? null : ElsePart.Clone());
 
-        public IStatement Clone() => new IfStatement(Expression.Clon(), IfPart.Clone(), ElsePart.Clone());
+        public IStatement Clone() => new IfStatement(Expression.Clon(), IfPart.Clone(), ElsePart is null ? null : ElsePart.Clone());
 
         public void Execute()
         {

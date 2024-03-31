@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.ExceptionServices;
 
 namespace VovaScript
 {
@@ -387,8 +388,8 @@ namespace VovaScript
                 throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
             string stroka = Convert.ToString(x[0]);
 
-            if (stroka.Length == 1) 
-                return stroka.Split('\n').Select(s => (object)s).ToList();
+            if (x.Length == 1) 
+                return stroka.Split().Select(s => (object)s).ToList();
             else
             {
                 string sep = Convert.ToString(x[1]);
@@ -569,13 +570,13 @@ namespace VovaScript
             if (x.Length < 1)
                 throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
             if (x[0] is string)
-                return ((string)x[0]).Length;
+                return Convert.ToInt64(((string)x[0]).Length);
             if (x[0] is long || x[0] is double)
-                return Convert.ToString(x[0]).Length;
+                return Convert.ToInt64(Convert.ToString(x[0]).Length);
             if (x[0] is bool)
-                return (bool)x[0] ? 1 : 0;
+                return Convert.ToInt64((bool)x[0] ? 1 : 0);
             if (x[0] is List<object>)
-                return ((List<object>)x[0]).Count;
+                return Convert.ToInt64(((List<object>)x[0]).Count);
             throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[0]}> ДЛЯ <{this}>");
         }
 
@@ -753,6 +754,10 @@ namespace VovaScript
                         }
                         object result = lambda.Execute();
                         list[i] = result is bool && wasString ? (bool)result ? "Истина" : "Ложь" : result;
+                        // check if size of list was changed and will change it online in перебор
+                        listed = x[0] is string || x[0] is List<object> ? SliceExpression.Obj2List(x[0]) :
+                            throw new Exception($"<{x[0]}> НЕ БЫЛ ЛИСТОМ ИЛИ СТРОКОЙ, А <{x[0]}>");
+                        list = new List<object>(listed);
                     }
                     Objects.Pop();
 
@@ -954,12 +959,14 @@ namespace VovaScript
     {
         public object Execute(object[] x)
         {
-            if (x.Length < 2)
+            if (x.Length < 1)
                 throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
             List<object> list = SliceExpression.Obj2List(x[0]);
 
             string joined;
-            if (x[1] is string)
+            if (x.Length == 1)
+                joined = "";
+            else if (x[1] is string)
                 joined = x[1] as string;
             else if (x[1] is long || x[1] is double)
                 joined = Convert.ToString(x[1]);
@@ -976,5 +983,111 @@ namespace VovaScript
         public IFunction Cloned() => new JoinedByFunction();
 
         public override string ToString() => "СОЕДИНЁН(<>)";
+    }
+
+    public sealed class ReverseFunction : IFunction
+    {
+        public object Execute(object[] x)
+        {
+            if (x.Length < 1)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+            if (x[0] is string)
+                return string.Join("", ((string)x[0]).Reverse());
+            if (x[0] is long || x[0] is double)
+                return string.Join("", Convert.ToString(x[0]).Reverse());
+            if (x[0] is List<object>)
+            {
+                List<object> temp = x[0] as List<object>;
+                temp.Reverse();
+                return temp;
+            }
+            throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[0]}> ДЛЯ <{this}>");
+        }
+
+        public IFunction Cloned() => new ReverseFunction();
+
+        public override string ToString() => "ОБРАТНО(<>)";
+    }
+
+    public sealed class SortFunction : IFunction
+    {
+        public object Execute(object[] x)
+        {
+            if (x.Length < 2)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+            object got = x[1];
+            if (got is IClass)
+            {
+                IClass classObject = got as IClass;
+                if (classObject.Body is null)
+                    throw new Exception($"<{x[1]}> НЕ ЯВЛЯЛСЯ ОБЪЕКТОМ ФУНКЦИИ");
+                if (classObject.Body is UserFunction)
+                {
+                    UserFunction lambda = classObject.Body as UserFunction;
+                    int argov = lambda.ArgsCount();
+                    if (argov < 1)
+                        throw new Exception(
+                            $"<{lambda}> ИМЕЛ НЕДОСТАТОЧНО АРГУМЕНТОВ\n" +
+                            $"ВОЗМОЖНЫЙ ПОРЯДОК АРГУМЕНТОВ: элемент, индекс, лист");
+                    bool index = lambda.ArgsCount() > 1;
+                    bool array = lambda.ArgsCount() > 2;
+                    bool wasString = x[0] is string;
+
+                    List<object> listed = x[0] is string || x[0] is List<object> ? SliceExpression.Obj2List(x[0]) :
+                            throw new Exception($"<{x[0]}> НЕ БЫЛ ЛИСТОМ ИЛИ СТРОКОЙ, А <{x[0]}>");
+                    List<object[]> resulted = new List<object[]>();
+
+                    Objects.Push();
+                    for (int i = 0; i < listed.Count; i++)
+                    {
+                        Objects.AddVariable(lambda.GetArgName(0), listed[i]);
+                        if (index)
+                        {
+                            Objects.AddVariable(lambda.GetArgName(1), Convert.ToInt64(i));
+                            if (array)
+                                Objects.AddVariable(lambda.GetArgName(2), listed);
+                        }
+                        resulted.Add(new object[] { i, lambda.Execute() });
+                    }
+                    Objects.Pop();
+
+                    resulted = resulted.OrderBy(r => r[1]).ToList();
+                    List<object> list = new List<object>(listed);
+                    
+                    for (int i = 0; i < listed.Count; i++)
+                        list[i] = listed[Convert.ToInt32(resulted[i][0])];
+
+                    return wasString ? (object)string.Join("", list) : list;
+                }
+                throw new Exception($"<{classObject}> НЕ ДОПУСТИМАЯ ФУНКЦИЯ ДЛЯ ИСПОЛЬЗОВАНИЯ В <{this}>");
+            }
+            throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[1]}> ДЛЯ <{this}>");
+        }
+
+        public IFunction Cloned() => new SortFunction();
+
+        public override string ToString() => $"ПОРЯДКОМ(<>)";
+    }
+
+    public sealed class ContainsFunction : IFunction
+    {
+        //public static bool CompareListOfLists(List<object> first, List<object> second) => first.All(f => f is List<object> ? first.Where(ff => ff is List<object>).All(ff => CompareListOfLists((List<object>)ff, )) : second.Contains(f));
+
+        public object Execute(object[] x)
+        {
+            if (x.Length < 2)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+            List<object> list = SliceExpression.Obj2List(x[0]);
+            if (x.Length == 2)
+                  return x[1] is List<object> ? list.Where(ll => ll is List<object>).Any(ll => ((List<object>)x[1]).SequenceEqual((List<object>)ll)) : list.Contains(x[1]);
+             //   return x[1] is List<object> ? list.Where(ll => ll is List<object>).Any(ll => CompareListOfLists((List<object>)x[1])) : list.Contains(x[1]);
+            else
+                return x.Skip(1).All(l => l is List<object> ? list.Where(ll => ll is List<object>).Any(ll => ((List<object>)l).SequenceEqual((List<object>)ll)) : list.Contains(l));
+
+        }
+
+        public IFunction Cloned() => new ContainsFunction();
+
+        public override string ToString() => "СОДЕРЖИТ(<>)";
     }
 }
