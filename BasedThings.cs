@@ -167,6 +167,8 @@ namespace VovaScript
         WHICH,
         [StringValue("ВКЛЮЧИТЬ")]
         IMPORT,
+        [StringValue("НАСЛЕДУЕТ")]
+        SON,
 
         //SQL
         [StringValue("СОЗДАТЬ")]
@@ -345,6 +347,8 @@ namespace VovaScript
         public static IClass IsLower = new IClass("низок", new Dictionary<string, object>(), new IsLowerFunction());
         public static IClass ToUpper = new IClass("высоким", new Dictionary<string, object>(), new ToUpperFunction());
         public static IClass ToLower = new IClass("низким", new Dictionary<string, object>(), new ToLowerFunction());
+        public static IClass Joined = new IClass("соединить", new Dictionary<string, object>(), new JoinedFunction());
+        public static IClass JoinedBy = new IClass("соединен", new Dictionary<string, object>(), new JoinedByFunction());
         
         // to type
         public static IClass Stringing = new IClass("строчить", new Dictionary<string, object>(), new StringingFunction());
@@ -401,6 +405,8 @@ namespace VovaScript
             { "перебор", new IClass("_перебор", new Dictionary<string, object>(), Map.Cloned()) },
             { "фильтр", new IClass("_фильтр", new Dictionary<string, object>(), Filter.Cloned()) },
             { "листом", new IClass("_листом", new Dictionary<string, object>(), Listing.Cloned()) },
+            { "соедини", new IClass("_соединить", new Dictionary<string, object>(), Joined.Cloned()) },
+            { "соединить", new IClass("_соединить", new Dictionary<string, object>(), Joined.Cloned()) },
         });
 
         public static IClass IBool = new IClass("ЯПравда", new Dictionary<string, object>
@@ -428,6 +434,8 @@ namespace VovaScript
             { "добавить", new IClass("_добавить", new Dictionary<string, object>(), Append.Cloned()) },
             { "удали", new IClass("_удалить", new Dictionary<string, object>(), DeleteItem.Cloned()) },
             { "удалить", new IClass("_удалить", new Dictionary<string, object>(), DeleteItem.Cloned()) },
+            { "соединен", new IClass("_соединен", new Dictionary<string, object>(), JoinedBy.Cloned()) },
+            { "соединён", new IClass("_соединен", new Dictionary<string, object>(), JoinedBy.Cloned()) },
         });
 
         /*        VARIABLES          */
@@ -486,6 +494,10 @@ namespace VovaScript
             { "листить", Listing },
             { "добавить", Append },
             { "удалить", DeleteItem },
+            { "соедини", Joined.Clone() },
+            { "соединить", Joined.Clone() },
+            { "соединен", JoinedBy.Clone() },
+            { "соединён", JoinedBy.Clone() },
 
             { "вычитать",  ReadAllFile },
             { "писать",  WritingFile.Clone() },

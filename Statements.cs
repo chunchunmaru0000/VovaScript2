@@ -715,22 +715,38 @@ namespace VovaScript
     public sealed class DeclareClassStatement : IStatement, IExpression
     {
         public Token ClassName;
+        public Token[] Inherit;
         public IStatement Body;
 
-        public DeclareClassStatement(Token className, IStatement body)
+        public DeclareClassStatement(Token className, Token[] inherit, IStatement body)
         {
             ClassName = className;
+            Inherit = inherit;
             Body = body;
         }
 
-        public IStatement Clone() => new DeclareClassStatement(ClassName.Clone(), Body.Clone());
+        public IStatement Clone() => new DeclareClassStatement(ClassName.Clone(), Inherit, Body.Clone());
 
-        public IExpression Clon() => new DeclareClassStatement(ClassName.Clone(), Body.Clone());
+        public IExpression Clon() => new DeclareClassStatement(ClassName.Clone(), Inherit, Body.Clone());
 
         public void Execute()
         {
             IClass newClass = new IClass(ClassName.View, new Dictionary<string, object>());
             BlockStatement body = Body as BlockStatement;
+
+            foreach(Token inherit in Inherit)
+            {
+                object parrent = Objects.GetVariable(inherit.View);
+                if (parrent is IClass)
+                {
+                    IClass parrentClass = parrent as IClass;
+                    foreach (var attr in parrentClass.Attributes)
+                        newClass.AddAttribute(attr.Key, attr.Value);
+                }
+                else
+                    throw new Exception($"<{inherit.View}> ЯВЛЯЛСЯ НЕ КЛАССОМ ИЛИ ОБЪЕКТОМ, А <{parrent}>, А СЛЕДОВАТЕЛЬНО ОТ НЕГО НЕ МОЖЕТ НАСЛЕДОВАТЬ");
+            }
+
             foreach (IStatement statement in body.Statements)
             {
                 if (statement is AssignStatement)
@@ -946,20 +962,25 @@ namespace VovaScript
 
     public sealed class ImportStatement : IStatement, IExpression
     {
+        int Dots;
         Token[] Path;
         object Result = "";
 
-        public ImportStatement(Token[] path) => Path = path;
+        public ImportStatement(int dots, Token[] path)
+        {
+            Dots = dots;
+            Path = path;
+        }
 
-        public IStatement Clone() => new ImportStatement(Path);
+        public IStatement Clone() => new ImportStatement(Dots, Path);
 
-        public IExpression Clon() => new ImportStatement(Path);
+        public IExpression Clon() => new ImportStatement(Dots, Path);
 
         public void Execute()
         {
             string dir = VovaScript2.Directory;
             List<string> folds = dir.Split('\\').ToList();
-            folds = folds.Take(folds.Count - 1).ToList();
+            folds = folds.Take(folds.Count - 1 - Dots).ToList();
             folds.AddRange(Path.Select(p => p.View));
             string filename = string.Join("\\", folds) + ".pyclan";
 

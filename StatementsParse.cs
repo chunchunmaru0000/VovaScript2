@@ -302,22 +302,36 @@ namespace VovaScript
         public IStatement Classy()
         {
             Token className = Consume(TokenType.VARIABLE);
+            List<Token> inherit = new List<Token>();
+            if (Match(TokenType.SON))
+                while (Current.Type == TokenType.VARIABLE)
+                {
+                    inherit.Add(Consume(TokenType.VARIABLE));
+                    Sep();
+                }
             if (Current.Type == TokenType.LTRISCOB || Current.Type == TokenType.LEFTSCOB)
             {
                 IStatement body = OneOrBlock();
-                return new DeclareClassStatement(className, body);
+                return new DeclareClassStatement(className, inherit.ToArray(), body);
             }
             throw new Exception($"{Near(6)}ОБЬЯВЛЕНИЕ ТЕЛА КЛАССА МОЖЕТ БЫТЬ ТОЛЬКО В СКОБКАХ");
         }
 
         public IStatement Importy()
         {
-            List<Token> path = new List<Token>();
-            path.Add(Consume(TokenType.VARIABLE));
+            int dots = 0;
+            while (Current.Type == TokenType.DOT || Current.Type == TokenType.DOTDOT)
+                if (Match(TokenType.DOT))
+                    dots++;
+                else if (Match(TokenType.DOTDOT))
+                    dots += 2;
+
+            List<Token> path = new List<Token>() { Consume(TokenType.VARIABLE) };
             while (Match(TokenType.DOT))
                 path.Add(Consume(TokenType.VARIABLE));
+
             Sep();
-            return new ImportStatement(path.ToArray());
+            return new ImportStatement(dots, path.ToArray());
         }
 
         public IStatement SQLCreateDatabasy()

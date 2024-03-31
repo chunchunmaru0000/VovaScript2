@@ -80,6 +80,9 @@
                 case "цикл":
                     word.Type = TokenType.LOOP;
                     return word;
+                case "реквием":
+                    word.Type = TokenType.LOOP;
+                    return word;
 
                 case "начертать":
                     word.Type = TokenType.WORD_PRINT;
@@ -216,6 +219,22 @@
                     word.Type = TokenType.WHICH;
                     return word;
 
+                case "сын":
+                    word.Type = TokenType.SON;
+                    return word;
+                case "наследует":
+                    word.Type = TokenType.SON;
+                    return word;
+                case "наследок":
+                    word.Type = TokenType.SON;
+                    return word;
+                case "наследник":
+                    word.Type = TokenType.SON;
+                    return word;
+                case "потомок":
+                    word.Type = TokenType.SON;
+                    return word;
+
                 /*           SQL           */
 
                 case "создать":
@@ -283,7 +302,6 @@
                 case "шаг":
                     word.Type = TokenType.STEP;
                     return word;
-
 
                 case "как":
                     word.Type = TokenType.AS;

@@ -912,4 +912,69 @@ namespace VovaScript
 
         public override string ToString() => "УДАЛИТЬ(<>)";
     }
+
+    public sealed class JoinedFunction : IFunction
+    {
+        public object Execute(object[] x)
+        {
+            if (x.Length < 2)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+            string joined = "";
+            if (x[0] is string)
+                joined = (string)x[0];
+            if (x[0] is long || x[0] is double)
+                joined = Convert.ToString(x[0]);
+            if (x[0] is bool)
+                joined = (bool)x[0] ? "Истина" : "Ложь";
+            if (x[0] is List<object>)
+                joined = PrintStatement.ListString((List<object>)x[0]);
+
+            if (x.Length == 2)
+                if (x[1] is List<object>)
+                    return string.Join(joined, (List<object>)x[1]);
+                else
+                    throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[1]}> ДЛЯ <{this}>");
+            else
+                return string.Join(joined, x.Skip(1).Select(s => 
+                    s is List<object> ? 
+                        PrintStatement.ListString((List<object>)s) : 
+                    s is bool ? 
+                        (bool)s ? "Истина" : "Ложь" : 
+                    Convert.ToString(s)));
+
+            throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[0]}> ДЛЯ <{this}>");
+        }
+
+        public IFunction Cloned() => new JoinedFunction();
+
+        public override string ToString() => "СОЕДИНИТЬ(<>)";
+    }
+
+    public sealed class JoinedByFunction : IFunction
+    {
+        public object Execute(object[] x)
+        {
+            if (x.Length < 2)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+            List<object> list = SliceExpression.Obj2List(x[0]);
+
+            string joined;
+            if (x[1] is string)
+                joined = x[1] as string;
+            else if (x[1] is long || x[1] is double)
+                joined = Convert.ToString(x[1]);
+            else if (x[1] is bool)
+                joined = (bool)x[1] ? "Истина" : "Ложь";
+            else if (x[1] is List<object>)
+                joined = PrintStatement.ListString((List<object>)x[1]);
+            else
+                throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[1]}> ДЛЯ <{this}>");
+
+            return string.Join(joined, list);
+        }
+
+        public IFunction Cloned() => new JoinedByFunction();
+
+        public override string ToString() => "СОЕДИНЁН(<>)";
+    }
 }
