@@ -235,6 +235,27 @@
                     word.Type = TokenType.SON;
                     return word;
 
+                case "бросить":
+                    word.Type = TokenType.THROW;
+                    return word;
+                case "брось":
+                    word.Type = TokenType.THROW;
+                    return word;
+
+                case "попробовать":
+                    word.Type = TokenType.TRY;
+                    return word;
+                case "попробуй":
+                    word.Type = TokenType.TRY;
+                    return word;
+
+                case "поймать":
+                    word.Type = TokenType.CATCH;
+                    return word;
+                case "поймай":
+                    word.Type = TokenType.CATCH;
+                    return word;
+
                 /*           SQL           */
 
                 case "создать":

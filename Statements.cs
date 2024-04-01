@@ -1013,4 +1013,80 @@ namespace VovaScript
 
         public override string ToString() => $"ВКЛЮЧИТЬ {string.Join(".", Path.Select(p => p.View))}";
     }
+
+    public sealed class ThrowStatement : IStatement, IExpression
+    {
+        public IExpression Message;
+        public object Result;
+
+        public ThrowStatement(IExpression message)
+        {
+            Message = message;
+        }
+
+        public void Execute() 
+        {
+            Result = HelpMe.GiveMeSafeStr(Message.Evaluated());
+            throw new Exception(Result as string);
+        }
+
+        public object Evaluated()
+        {
+            Execute();
+            return Result; // its have no meaning at all but well will it be for the sake of IExpression i dunno wry
+        }
+
+        public IStatement Clone() => new ThrowStatement(Message.Clon());
+
+        public IExpression Clon() => new ThrowStatement(Message.Clon());
+
+        public override string ToString() => $"БРОСЬ {Message}";
+    }
+
+    public sealed class TryCatchStatement : IStatement, IExpression
+    {
+        public IStatement TryBlock;
+        public Token To;
+        public IStatement CatchBlock;
+
+        public TryCatchStatement(IStatement tryBlock, Token to, IStatement catchBlock)
+        {
+            TryBlock = tryBlock;
+            To = to;
+            CatchBlock = catchBlock;
+        }
+
+        public void Execute()
+        {
+            try
+            {
+                TryBlock.Execute();
+            }
+            catch(Exception e)
+            {
+                if (To != null)
+                    Objects.AddVariable(To.View, e.Message);
+                CatchBlock.Execute();
+            }
+        }
+
+        public object Evaluated()
+        {
+            try
+            {
+                Execute();
+            }
+            catch (ReturnStatement result)
+            {
+                return result.GetResult();
+            }
+            throw new Exception($"ЕСЛИ ИСПОЛЬЗОВАТЬ ТАК СТРУКТУРУ <{this}> ТО НАДО ЧТО-ТО ВЕРНУТЬ");
+        }
+
+        public IStatement Clone() => new TryCatchStatement(TryBlock.Clone(), To is null ? null : To.Clone(), CatchBlock.Clone());
+
+        public IExpression Clon() => new TryCatchStatement(TryBlock.Clone(), To is null ? null : To.Clone(), CatchBlock.Clone());
+
+        public override string ToString() => "ПОПРОБОВАТЬ {" + TryBlock.ToString() + "} ПОЙМАТЬ" + (To is null ? "" : To.ToString()) + " {" + CatchBlock.ToString() + "}";
+    }
 }

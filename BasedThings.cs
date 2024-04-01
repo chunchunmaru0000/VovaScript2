@@ -169,6 +169,12 @@ namespace VovaScript
         IMPORT,
         [StringValue("НАСЛЕДУЕТ")]
         SON,
+        [StringValue("БРОСИТЬ")]
+        THROW,
+        [StringValue("ПОПРОБОВАТЬ")]
+        TRY,
+        [StringValue("ПОЙМАЙТЬ")]
+        CATCH,
 
         //SQL
         [StringValue("СОЗДАТЬ")]

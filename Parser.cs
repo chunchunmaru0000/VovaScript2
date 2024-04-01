@@ -201,6 +201,12 @@ namespace VovaScript
             if (Match(TokenType.SLEEP))
                 return Sleepy();
 
+            if (Match(TokenType.THROW))
+                return Throwy();
+            
+            if (Match(TokenType.TRY))
+                return TryCatchy();
+
             if (Match(TokenType.WORD_PRINT))
                 return Printy();
 

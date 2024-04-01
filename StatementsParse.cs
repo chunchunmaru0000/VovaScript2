@@ -342,6 +342,24 @@ namespace VovaScript
             return new ImportStatement(dots, path.ToArray());
         }
 
+        public IStatement Throwy()
+        {
+            IExpression message = Expression();
+            Sep();
+            return new ThrowStatement(message);
+        }
+
+        public IStatement TryCatchy()
+        {
+            IStatement tryBlock = OneOrBlock();
+            Consume(TokenType.CATCH);
+            Token to = IMPOSSIBLE;
+            if (Current.Type == TokenType.VARIABLE)
+                to = Consume(TokenType.VARIABLE);
+            IStatement catchBlock = OneOrBlock();
+            return new TryCatchStatement(tryBlock, to, catchBlock);
+        }
+
         public IStatement SQLCreateDatabasy()
         {
             Consume(TokenType.CREATE);
