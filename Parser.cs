@@ -86,7 +86,8 @@ namespace VovaScript
                    type == TokenType.LCUBSCOB   ||
                    type == TokenType.SELECT     ||
                    type == TokenType.NEW        || 
-                   type == TokenType.AT         ;
+                   type == TokenType.AT         ||
+                   type == TokenType.STICK      ;
         }
 
         private bool Match(TokenType type)

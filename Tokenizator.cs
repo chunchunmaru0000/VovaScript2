@@ -273,6 +273,9 @@ namespace VovaScript
                 case '?':
                     Next();
                     return new Token() { View = "?", Value = null, Type = TokenType.QUESTION };
+                case '|':
+                    Next();
+                    return new Token() { View = "|", Value = null, Type = TokenType.STICK };
                 default:
                     throw new Exception("НЕ СУЩЕСТВУЮЩИЙ СИМВОЛ В ДАННОМ ЯЗЫКЕ");
             }

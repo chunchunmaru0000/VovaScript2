@@ -123,6 +123,8 @@ namespace VovaScript
         DOTDOTEQ,
         [StringValue("ЗНАК ВОПРОСА")]
         QUESTION,
+        [StringValue("ПАЛКА | ")]
+        STICK,
 
         //words types
         [StringValue("ЕСЛИ")]

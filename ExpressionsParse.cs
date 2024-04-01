@@ -58,6 +58,13 @@ namespace VovaScript
             throw new Exception($"{Near(6)}НЕВЕРНЫЙ СИНТАКСИС ГДЕ-ТО РЯДОМ С: {result}");
         }
 
+        private IExpression Absy()
+        {
+            IExpression expression = Expression();
+            Consume(TokenType.STICK);
+            return new AbsExpression(expression);
+        }
+
         private IExpression SQLy()
         {
             List<IExpression> selections = new List<IExpression>();
@@ -158,6 +165,9 @@ namespace VovaScript
 
             if (Match(TokenType.LEFTSCOB))
                 return Scoby();
+
+            if (Match(TokenType.STICK))
+                return Absy();
 
             if (Match(TokenType.VARIABLE))
                 return new VariableExpression(current);

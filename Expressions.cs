@@ -431,6 +431,30 @@ namespace VovaScript
         public override string ToString() => $"{Left} {Comparation.View} {Right}";
     }
 
+    public sealed class AbsExpression : IExpression
+    {
+        public IExpression Value;
+
+        public AbsExpression(IExpression value)
+        {
+            Value = value;
+        }
+
+        public IExpression Clon() => new AbsExpression(Value.Clon());
+
+        public object Evaluated()
+        {
+            object got = Value.Evaluated();
+            if (got is long)
+                return Math.Abs(Convert.ToInt64(got));
+            if (got is double)
+                return Math.Abs(Convert.ToDouble(got));
+            throw new Exception($"<{got}> БЫЛ НЕ КОРРЕКТНЫМ ЗНАЧЕНИЕМ ДЛЯ <{this}>");
+        }
+
+        public override string ToString() => "|" + Value.ToString() + "|"; 
+    }
+
     public sealed class ShortIfExpression : IExpression
     {
         IExpression Condition;
