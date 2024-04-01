@@ -57,8 +57,7 @@ namespace VovaScript
                 stopwatch.Stop();
                 if (TimePrint)
                     Console.WriteLine(stopwatch.Elapsed);
-            } catch (ReturnStatement ret) { Console.ForegroundColor = ConsoleColor.Red; Console.WriteLine($"КАК-ТО НЕ ТАК ВЕРНУЛ НО ВЕРНУЛО: <{ret.GetResult()}>"); Console.ResetColor(); } 
-            catch (Exception error) { Console.ForegroundColor = ConsoleColor.Red; Console.WriteLine(error.Message); Console.ResetColor(); }
+            } catch (ReturnStatement ret) { Console.ForegroundColor = ConsoleColor.Red; Console.WriteLine($"КАК-ТО НЕ ТАК ВЕРНУЛ НО ВЕРНУЛО: <{ret.GetResult()}>"); Console.ResetColor(); } catch (Exception error) { Console.ForegroundColor = ConsoleColor.Red; Console.WriteLine(error.Message); Console.ResetColor(); }
 
             PrintVariables(PrintVariablesAfterDebug);
         }

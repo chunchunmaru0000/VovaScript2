@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Runtime.ExceptionServices;
+using System.Reflection;
 
 namespace VovaScript
 {
@@ -66,45 +66,13 @@ namespace VovaScript
         {
             object got = Pool.Evaluated();
             FunctionExpression borrow = Borrow as FunctionExpression;
-            if (got is IClass)
-            {
-                IClass classObject = got as IClass;
-                // proceed
-                got = classObject.GetAttribute(MethodName.View);
-                UserFunction method = null;
-                if (got is IClass)
-                    method = ((IClass)got).Body as UserFunction;
-                else
-                {
-                    Console.WriteLine("ДА ПОЧЕМУ ОНО СЮДА ВЕДЕТ");
-                    throw new Exception($"НЕ ЯВЛЯЕТСЯ МЕТОДОМ: <{got}> С ИМЕНЕМ <{MethodName.View}>");
-                }
-
-                object[] args = borrow.Args.Select(a => a.Evaluated()).ToArray();
-                if (args.Length < method.ArgsCount())
-                    throw new Exception($"НЕВЕРНОЕ КОЛИЧЕСТВО АРГУМЕНТОВ: БЫЛО<{args.Length}> ОЖИДАЛОСЬ<{method.ArgsCount()}>");
-                Objects.Push();
-                // attrs
-                foreach (var attribute in classObject.Attributes)
-                    Objects.AddVariable(attribute.Key, attribute.Value);
-                // args
-                for (int i = 0; i < method.ArgsCount(); i++)
-                {
-                    string arg = method.GetArgName(i);
-                    Objects.AddVariable(arg, args[i]);
-                }
-                // execute
-                object result = method.Execute();
-                // restore or update
-                foreach (var variable in Objects.Variables)
-                    if (classObject.ContainsAttribute(variable.Key))
-                        classObject.AddAttribute(variable.Key, variable.Value);
-                Objects.Pop();
-                return result;
-            }
             object value = got;
-
-            if (value is long)
+            if (value is IClass)
+            {
+                IClass classObject = value as IClass;
+                got = classObject.GetAttribute(MethodName.View);
+            }
+            else if (value is long)
             {
                 IClass IInt = Objects.IInteger.Clone();
                 got = IInt.GetAttribute(MethodName.View);
@@ -386,15 +354,34 @@ namespace VovaScript
         {
             if (x.Length == 0)
                 throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
-            string stroka = Convert.ToString(x[0]);
+            string stroka = HelpMe.GiveMeSafeStr(x[0]);
 
             if (x.Length == 1) 
                 return stroka.Split().Select(s => (object)s).ToList();
             else
             {
-                string sep = Convert.ToString(x[1]);
-                char separator = sep[0]; //(sep == "\\n") ? '\n' : (sep == "\\t") ? '\t' : sep[0];
-                return stroka.Split(separator).Select(s => (object)s).ToList();
+                string sep = HelpMe.GiveMeSafeStr(x[1]);
+                int len = sep.Length;
+
+                if (sep.Length == 1)
+                    return stroka.Split(sep[0]).Select(s => (object)s).ToList();
+                else
+                {
+                    List<object> list = new List<object>();
+                    string buffer = "";
+                    foreach(char letter in stroka)
+                    {
+                        buffer += letter;
+                        if (buffer.EndsWith(sep))
+                        {
+                            list.Add(buffer.Substring(0, buffer.Length - len));
+                            buffer = "";
+                        }
+                    }
+                    if (buffer != "")
+                        list.Add(buffer);
+                    return list;
+                }
             }
         }
 
@@ -910,7 +897,23 @@ namespace VovaScript
                     throw new Exception("ВИДИМО БЫЛО УДАЛЕНО СЛИШКОМ МНОГО ЭЛЕМЕНТОВ");
                 }
             }
-            throw new Exception($"НЕВЕРНЫЙ ОБЪЕКТ <{x[0]}> ДЛЯ <{this}>");
+
+            List<object> list = SliceExpression.Obj2List(x[0]);
+            try
+            {
+                bool wasString = x[0] is string;
+                if (x.Length == 2)
+                    list.RemoveAt(HelpMe.GiveMeSafeInt(x[1]));
+                else
+                    list.RemoveRange(
+                        HelpMe.GiveMeSafeInt(x[1]),
+                        HelpMe.GiveMeSafeInt(x[2]));
+                return wasString ? (object)string.Join("", list) : list;
+            }
+            catch (ArgumentException)
+            {
+                throw new Exception("ВИДИМО БЫЛО УДАЛЕНО СЛИШКОМ МНОГО ЭЛЕМЕНТОВ");
+            }
         }
 
         public IFunction Cloned() => new DeleteItemFunction();
@@ -1071,7 +1074,43 @@ namespace VovaScript
 
     public sealed class ContainsFunction : IFunction
     {
-        //public static bool CompareListOfLists(List<object> first, List<object> second) => first.All(f => f is List<object> ? first.Where(ff => ff is List<object>).All(ff => CompareListOfLists((List<object>)ff, )) : second.Contains(f));
+        public static bool CompareListOfLists(List<object> first, List<object> second) 
+        {
+            if (first.Count != second.Count)
+                return false;
+            for (int i = 0; i < first.Count; i++)
+            {
+                object f = first[i];
+                object s = second[i];
+
+                if (f is List<object>)
+                {
+                    if (s is List<object> == false)
+                        return false;
+                    if (!CompareListOfLists((List<object>)f, (List<object>)s))
+                        return false;
+                    continue;
+                }
+                if (f.GetType() == s.GetType())
+                {
+                    if (f is long)
+                        if (Convert.ToInt64(f) == Convert.ToInt64(s))
+                            continue;
+                    if (f is double)
+                        if (Convert.ToDouble(f) == Convert.ToDouble(s))
+                            continue;
+                    if (f is bool)
+                        if (Convert.ToBoolean(f) == Convert.ToBoolean(s))
+                            continue;
+                    if (f is string)
+                        if (Convert.ToString(f) == Convert.ToString(s))
+                            continue;
+                    throw new Exception($"ЧТО ЗА ТИП ТАКОЙ ЭЭЭ <{f.GetType()}> У <{f}> И <{s}>");
+                }
+                return false;
+            }
+            return true;
+        }
 
         public object Execute(object[] x)
         {
@@ -1079,10 +1118,9 @@ namespace VovaScript
                 throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
             List<object> list = SliceExpression.Obj2List(x[0]);
             if (x.Length == 2)
-                  return x[1] is List<object> ? list.Where(ll => ll is List<object>).Any(ll => ((List<object>)x[1]).SequenceEqual((List<object>)ll)) : list.Contains(x[1]);
-             //   return x[1] is List<object> ? list.Where(ll => ll is List<object>).Any(ll => CompareListOfLists((List<object>)x[1])) : list.Contains(x[1]);
+                return x[1] is List<object> ? list.Where(l => l is List<object>).Any(l => CompareListOfLists((List<object>)l, (List<object>)x[1])) : list.Contains(x[1]);
             else
-                return x.Skip(1).All(l => l is List<object> ? list.Where(ll => ll is List<object>).Any(ll => ((List<object>)l).SequenceEqual((List<object>)ll)) : list.Contains(l));
+                return x.Skip(1).All(l => l is List<object> ? list.Where(ll => ll is List<object>).Any(ll => CompareListOfLists(((List<object>)l), (List<object>)ll)) : list.Contains(l));
 
         }
 
@@ -1090,4 +1128,51 @@ namespace VovaScript
 
         public override string ToString() => "СОДЕРЖИТ(<>)";
     }
+
+    public sealed class DirFunction : IFunction
+    {
+        public object Execute(object[] x)
+        {
+            if (x.Length == 0)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+            object value = x[0];
+            if (value is IClass)
+            {
+                IClass classObject = value as IClass;
+                return classObject.Attributes.Select(a => (object)new List<object> { a.Key, a.Value }).ToList();
+            }
+            else if (value is long)
+            {
+                IClass IInt = Objects.IInteger.Clone();
+                return IInt.Attributes.Select(a => (object)new List<object> { a.Key, a.Value }).ToList();
+            }
+            else if (value is string)
+            {
+                IClass IStr = Objects.IString.Clone();
+                return IStr.Attributes.Select(a => (object)new List<object> { a.Key, a.Value }).ToList();
+            }
+            else if (value is double)
+            {
+                IClass IFlt = Objects.IFloat.Clone();
+                return IFlt.Attributes.Select(a => (object)new List<object> { a.Key, a.Value }).ToList();
+            }
+            else if (value is bool)
+            {
+                IClass IBol = Objects.IBool.Clone();
+                return IBol.Attributes.Select(a => (object)new List<object> { a.Key, a.Value }).ToList();
+            }
+            else if (value is List<object>)
+            {
+                IClass ILst = Objects.IList.Clone();
+                return ILst.Attributes.Select(a => (object)new List<object> { a.Key, a.Value }).ToList();
+            }
+            throw new Exception($"ЧО ЗА ТИП ТАКОЙ ЭЭЭ <{value.GetType()}> У <{value}>");
+        }
+
+        public IFunction Cloned() => new DirFunction();
+
+        public override string ToString() => "ВЛАДЕЕТ(<>)";
+    }
+
+
 }
