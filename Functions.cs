@@ -320,9 +320,9 @@ namespace VovaScript
         {
             if (x.Length == 0)
                 throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
-            string file = Convert.ToString(x[0]);
+            string file = HelpMe.GiveMeSafeStr(x[0]);
 
-            if (x.Length >= 2 && Convert.ToString(x[1]) == "линии")
+            if (x.Length >= 2 && HelpMe.GiveMeSafeStr(x[1]) == "линии")
                 try
                 {
                     return File.ReadAllLines(file, System.Text.Encoding.UTF8).Select(s => (object)s).ToList();
@@ -411,7 +411,7 @@ namespace VovaScript
         {
             if (x.Length > 0)
             {
-                string message = Convert.ToString(x[0]);
+                string message = HelpMe.GiveMeSafeStr(x[0]);
                 Console.Write(message);
             }
             return Console.ReadLine();
@@ -435,13 +435,9 @@ namespace VovaScript
                 case 0:
                     return "";
                 case 1:
-                    return x[0] is bool ? (bool)x[0] ? "Истина" : "Ложь"
-                         : x[0] is List<object> ? (object)PrintStatement.ListString((List<object>)x[0])
-                         : Convert.ToString(x[0]);
+                    return HelpMe.GiveMeSafeStr(x[0]);
                 default:
-                    return x.Select(s => s is bool ? (bool)s ? (object)"Истина" : (object)"Ложь" 
-                                       : s is List<object> ? (object)PrintStatement.ListString((List<object>)s) 
-                                       : (object)Convert.ToString(s)).ToList();
+                    return x.Select(s => HelpMe.GiveMeSafeStr(s)).ToList();
             }
         }
 
@@ -463,11 +459,11 @@ namespace VovaScript
                 switch (x.Length)
                 {
                     case 1:
-                        return x[0] is bool ? (bool)x[0] ? (object)1 : (object)0 : Int64.Parse(Convert.ToString(x[0]));
+                        return x[0] is bool ? (bool)x[0] ? (object)1 : (object)0 : Int64.Parse(HelpMe.GiveMeSafeStr(x[0]));
                     default:
                         return x.Select(s => s is string ? (object)Int64.Parse((string)s) 
                                            : s is bool ? (bool)s ? (object)1 : (object)0
-                                           : (object)Int64.Parse(Convert.ToString(s))).ToList();
+                                           : (object)Int64.Parse(HelpMe.GiveMeSafeStr(s))).ToList();
                 }
             }
             catch (Exception) { throw new Exception($"КОНВЕРТАЦИЯ НЕ УДАЛАСЬ: <{x[0]}>"); }
@@ -514,9 +510,9 @@ namespace VovaScript
         {
             if (x.Length < 3)
                 throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
-            string file = Convert.ToString(x[0]);
-            string mode = Convert.ToString(x[1]);
-            string data = Convert.ToString(x[2]);
+            string file = HelpMe.GiveMeSafeStr(x[0]);
+            string mode = HelpMe.GiveMeSafeStr(x[1]);
+            string data = HelpMe.GiveMeSafeStr(x[2]);
 
             try
             {
@@ -541,7 +537,6 @@ namespace VovaScript
             {
                 throw new Exception("НЕ ПОЛУЧИЛОСЬ ЗАПИСАТЬ В ФАЙЛ: " + file);
             }
-
             return x;
         }
 
@@ -556,15 +551,10 @@ namespace VovaScript
         {
             if (x.Length < 1)
                 throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
-            if (x[0] is string)
-                return Convert.ToInt64(((string)x[0]).Length);
-            if (x[0] is long || x[0] is double)
-                return Convert.ToInt64(Convert.ToString(x[0]).Length);
-            if (x[0] is bool)
-                return Convert.ToInt64((bool)x[0] ? 1 : 0);
             if (x[0] is List<object>)
                 return Convert.ToInt64(((List<object>)x[0]).Count);
-            throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[0]}> ДЛЯ <{this}>");
+            return HelpMe.GiveMeSafeStr(x[0]).Length;
+            //throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[0]}> ДЛЯ <{this}>");
         }
 
         public IFunction Cloned() => new LenghtFunction();
@@ -578,13 +568,8 @@ namespace VovaScript
         {
             if (x.Length < 1)
                 throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
-            if (x[0] is string)
-                return Convert.ToInt64((int)(((string)x[0])[0]));
-            if (x[0] is long || x[0] is double)
-                return Convert.ToInt64((int)(Convert.ToString(x[0])[0]));
-            if (x[0] is bool)
-                return (bool)x[0] ? Convert.ToInt64(61) : Convert.ToInt64(61);
-            throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[0]}> ДЛЯ <{this}>");
+            return Convert.ToInt64((int)(HelpMe.GiveMeSafeStr(x[0])[0]));
+            //throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[0]}> ДЛЯ <{this}>");
         }
 
         public IFunction Cloned() => new ASCIICodeFunction();
@@ -628,7 +613,7 @@ namespace VovaScript
                 throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
             if (x[0] is string)
             {
-                string took = Convert.ToString(x[0]);
+                string took = HelpMe.GiveMeSafeStr(x[0]);
                 return took.All(got => char.IsUpper(got) || (got > 1039 && got < 1072 || got == 1025));
             }
             throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[0]}> ДЛЯ <{this}>");
@@ -647,7 +632,7 @@ namespace VovaScript
                 throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
             if (x[0] is string)
             {
-                string took = Convert.ToString(x[0]);
+                string took = HelpMe.GiveMeSafeStr(x[0]);
                 return took.All(got => char.IsLower(got) || (got > 1071 && got < 1104 || got == 1105));
             }
             throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[0]}> ДЛЯ <{this}>");
@@ -666,7 +651,7 @@ namespace VovaScript
                 throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
             if (x[0] is string)
             {
-                string took = Convert.ToString(x[0]);
+                string took = HelpMe.GiveMeSafeStr(x[0]);
                 return string.Join("", took.Select(got => char.IsLower(got) ?
                                               char.ToUpper(got) :
                                           got > 1039 && got < 1072 ?
@@ -689,7 +674,7 @@ namespace VovaScript
                 throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
             if (x[0] is string)
             {
-                string took = Convert.ToString(x[0]);
+                string took = HelpMe.GiveMeSafeStr(x[0]);
                 CultureInfo info = new CultureInfo("ru-RU");
                 return string.Join("", took.Select(got => char.IsUpper(got) || got > 1071 && got < 1104 || got == 1105 ? char.ToLower(got, info) : got));
             }
@@ -839,10 +824,8 @@ namespace VovaScript
                 throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
             if (x[0] is List<object>)
                 return x[0];
-            if (x[0] is string || x[0] is double || x[0] is long)
-                return Convert.ToString(x[0]).ToCharArray().Select(c => (object)Convert.ToString(c)).ToList();
-            if (x[0] is bool)
-                return (((bool)x[0]) ? "Истина" : "Ложь").ToCharArray().Select(c => (object)Convert.ToString(c)).ToList();
+            if (x[0] is string || x[0] is double || x[0] is long || x[0] is bool)
+                return HelpMe.GiveMeSafeStr(x[0]).ToCharArray().Select(c => (object)Convert.ToString(c)).ToList();
             throw new Exception($"КОНВЕРТАЦИЯ НЕ УДАЛАСЬ: <{x[0]}>");
         }
 
@@ -928,14 +911,7 @@ namespace VovaScript
             if (x.Length < 2)
                 throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
             string joined = "";
-            if (x[0] is string)
-                joined = (string)x[0];
-            if (x[0] is long || x[0] is double)
-                joined = Convert.ToString(x[0]);
-            if (x[0] is bool)
-                joined = (bool)x[0] ? "Истина" : "Ложь";
-            if (x[0] is List<object>)
-                joined = PrintStatement.ListString((List<object>)x[0]);
+            joined = HelpMe.GiveMeSafeStr(x[0]);
 
             if (x.Length == 2)
                 if (x[1] is List<object>)
@@ -943,12 +919,7 @@ namespace VovaScript
                 else
                     throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[1]}> ДЛЯ <{this}>");
             else
-                return string.Join(joined, x.Skip(1).Select(s => 
-                    s is List<object> ? 
-                        PrintStatement.ListString((List<object>)s) : 
-                    s is bool ? 
-                        (bool)s ? "Истина" : "Ложь" : 
-                    Convert.ToString(s)));
+                return string.Join(joined, x.Skip(1).Select(s => HelpMe.GiveMeSafeStr(s)));
 
             throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[0]}> ДЛЯ <{this}>");
         }
@@ -966,20 +937,8 @@ namespace VovaScript
                 throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
             List<object> list = SliceExpression.Obj2List(x[0]);
 
-            string joined;
-            if (x.Length == 1)
-                joined = "";
-            else if (x[1] is string)
-                joined = x[1] as string;
-            else if (x[1] is long || x[1] is double)
-                joined = Convert.ToString(x[1]);
-            else if (x[1] is bool)
-                joined = (bool)x[1] ? "Истина" : "Ложь";
-            else if (x[1] is List<object>)
-                joined = PrintStatement.ListString((List<object>)x[1]);
-            else
-                throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[1]}> ДЛЯ <{this}>");
-
+            string joined = x.Length == 1 ? "" : HelpMe.GiveMeSafeStr(x[1]);
+            //else throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[1]}> ДЛЯ <{this}>");
             return string.Join(joined, list);
         }
 
@@ -994,10 +953,8 @@ namespace VovaScript
         {
             if (x.Length < 1)
                 throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
-            if (x[0] is string)
-                return string.Join("", ((string)x[0]).Reverse());
-            if (x[0] is long || x[0] is double)
-                return string.Join("", Convert.ToString(x[0]).Reverse());
+            if (x[0] is string || x[0] is long || x[0] is double || x[0] is bool)
+                return string.Join("", HelpMe.GiveMeSafeStr(x[0]).Reverse());
             if (x[0] is List<object>)
             {
                 List<object> temp = x[0] as List<object>;
@@ -1174,5 +1131,77 @@ namespace VovaScript
         public override string ToString() => "ВЛАДЕЕТ(<>)";
     }
 
+    public sealed class ReplaceFunction : IFunction
+    {
+        public object Execute(object[] x)
+        {
+            if (x.Length < 3)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+            string stroka = HelpMe.GiveMeSafeStr(x[0]);
+            string toRep = HelpMe.GiveMeSafeStr(x[1]);
+            string byRep = HelpMe.GiveMeSafeStr(x[2]);
+            return stroka.Replace(toRep, byRep);
+        }
 
+        public IFunction Cloned() => new ReplaceFunction();
+
+        public override string ToString() => $"ЗАМЕНА(<>)";
+    }
+
+    public sealed class TrimFunction : IFunction
+    {
+        public object Execute(object[] x)
+        {
+            if (x.Length < 1)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+            string stroka = HelpMe.GiveMeSafeStr(x[0]);
+
+            if (x.Length == 1)
+                return stroka.Trim();
+            string trimBy = HelpMe.GiveMeSafeStr(x[1]);
+            return stroka.Trim(trimBy.ToCharArray());
+        }
+
+        public IFunction Cloned() => new TrimFunction();
+
+        public override string ToString() => $"ОБРЕЗ(<>)";
+    }
+
+    public sealed class TrimStartFunction : IFunction
+    {
+        public object Execute(object[] x)
+        {
+            if (x.Length < 1)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+            string stroka = HelpMe.GiveMeSafeStr(x[0]);
+
+            if (x.Length == 1)
+                return stroka.TrimStart();
+            string trimBy = HelpMe.GiveMeSafeStr(x[1]);
+            return stroka.TrimStart(trimBy.ToCharArray());
+        }
+
+        public IFunction Cloned() => new TrimStartFunction();
+
+        public override string ToString() => $"ОБРЕЗ_ЛЕВ(<>)";
+    }
+
+    public sealed class TrimEndFunction : IFunction
+    {
+        public object Execute(object[] x)
+        {
+            if (x.Length < 1)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+            string stroka = HelpMe.GiveMeSafeStr(x[0]);
+
+            if (x.Length == 1)
+                return stroka.TrimEnd();
+            string trimBy = HelpMe.GiveMeSafeStr(x[1]);
+            return stroka.TrimEnd(trimBy.ToCharArray());
+        }
+
+        public IFunction Cloned() => new TrimEndFunction();
+
+        public override string ToString() => $"ОБРЕЗ_ПРАВ(<>)";
+    }
 }

@@ -345,6 +345,7 @@ namespace VovaScript
         public static IClass JoinedBy = new IClass("соединен", new Dictionary<string, object>(), new JoinedByFunction());
         public static IClass Sort = new IClass("порядком", new Dictionary<string, object>(), new SortFunction());
         public static IClass Contains = new IClass("содержит", new Dictionary<string, object>(), new ContainsFunction());
+        public static IClass Reverse = new IClass("обратно", new Dictionary<string, object>(), new ReverseFunction());
 
         public static IClass ASCIICode = new IClass("чаркод", new Dictionary<string, object>(), new ASCIICodeFunction());
         public static IClass FromASCIICode = new IClass("символом", new Dictionary<string, object>(), new FromASCIICodeFunction());
@@ -353,7 +354,10 @@ namespace VovaScript
         public static IClass ToUpper = new IClass("высоким", new Dictionary<string, object>(), new ToUpperFunction());
         public static IClass ToLower = new IClass("низким", new Dictionary<string, object>(), new ToLowerFunction());
         public static IClass Joined = new IClass("соединить", new Dictionary<string, object>(), new JoinedFunction());
-        public static IClass Reverse = new IClass("обратно", new Dictionary<string, object>(), new ReverseFunction());
+        public static IClass Replace = new IClass("замена", new Dictionary<string, object>(), new ReplaceFunction());
+        public static IClass Trim = new IClass("обрез", new Dictionary<string, object>(), new TrimFunction());
+        public static IClass TrimStart = new IClass("обрез_лев", new Dictionary<string, object>(), new TrimStartFunction());
+        public static IClass TrimEnd = new IClass("обрез_прав", new Dictionary<string, object>(), new TrimEndFunction());
         
         // to type
         public static IClass Stringing = new IClass("строчить", new Dictionary<string, object>(), new StringingFunction());
@@ -377,6 +381,7 @@ namespace VovaScript
             { "мин", long.MinValue },
             { "макс", long.MaxValue },
             { "владеет", new IClass("_владеет", new Dictionary<string, object>(), Dir.Cloned()) },
+            { "дир", new IClass("_владеет", new Dictionary<string, object>(), Dir.Cloned()) },
         });
 
         public static IClass IFloat = new IClass("ЯТочка", new Dictionary<string, object>
@@ -393,6 +398,7 @@ namespace VovaScript
             { "мин", double.MinValue },
             { "макс", double.MaxValue },
             { "владеет", new IClass("_владеет", new Dictionary<string, object>(), Dir.Cloned()) },
+            { "дир", new IClass("_владеет", new Dictionary<string, object>(), Dir.Cloned()) },
         });
 
         public static IClass IString = new IClass("ЯСтрока", new Dictionary<string, object>
@@ -425,6 +431,11 @@ namespace VovaScript
             { "раздел", new IClass("_раздел", new Dictionary<string, object>(), Split.Cloned()) },
             { "сплит", new IClass("_сплит", new Dictionary<string, object>(), Split.Cloned()) },
             { "владеет", new IClass("_владеет", new Dictionary<string, object>(), Dir.Cloned()) },
+            { "дир", new IClass("_владеет", new Dictionary<string, object>(), Dir.Cloned()) },
+            { "замена", new IClass("_замена", new Dictionary<string, object>(), Replace.Cloned()) },
+            { "обрез", new IClass("_обрез", new Dictionary<string, object>(), Trim.Cloned()) },
+            { "обрез_лев", new IClass("_обрез_лев", new Dictionary<string, object>(), TrimStart.Cloned()) },
+            { "обрез_прав", new IClass("_обрез_прав", new Dictionary<string, object>(), TrimEnd.Cloned()) },
         });
 
         public static IClass IBool = new IClass("ЯПравда", new Dictionary<string, object>
@@ -437,6 +448,7 @@ namespace VovaScript
             { "символом", new IClass("_символом", new Dictionary<string, object>(), FromASCIICode.Cloned()) },
             { "чаром", new IClass("_символом", new Dictionary<string, object>(), FromASCIICode.Cloned()) },
             { "владеет", new IClass("_владеет", new Dictionary<string, object>(), Dir.Cloned()) },
+            { "дир", new IClass("_владеет", new Dictionary<string, object>(), Dir.Cloned()) },
         });
 
         public static IClass IList = new IClass("ЯЛист", new Dictionary<string, object>
@@ -462,6 +474,7 @@ namespace VovaScript
             { "содержит", new IClass("_содержит", new Dictionary<string, object>(), Contains.Cloned()) },
             { "имеет", new IClass("_содержит", new Dictionary<string, object>(), Contains.Cloned()) },
             { "владеет", new IClass("_владеет", new Dictionary<string, object>(), Dir.Cloned()) },
+            { "дир", new IClass("_владеет", new Dictionary<string, object>(), Dir.Cloned()) },
         });
 
         /*        VARIABLES          */
@@ -529,6 +542,10 @@ namespace VovaScript
             { "иеет", Contains.Clone() },
             { "содержит", Contains.Clone() },
             { "владеет", Dir },
+            { "замена", Replace },
+            { "обрез", Trim },
+            { "обрез_лев", TrimStart },
+            { "обрез_прав", TrimEnd },
 
             { "вычитать",  ReadAllFile },
             { "писать",  WritingFile.Clone() },
