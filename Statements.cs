@@ -137,42 +137,50 @@ namespace VovaScript
     {
         public IExpression Expression;
         public IStatement IfPart;
+        public IExpression[] ElifExps;
+        public IStatement[] ElifStats;
         public IStatement ElsePart;
-        public IfStatement(IExpression expression, IStatement ifStatement, IStatement elseStatement)
+        public IfStatement(IExpression expression, IStatement ifStatement, IExpression[] elifExps, IStatement[] elifStats, IStatement elseStatement)
         {
             Expression = expression;
             IfPart = ifStatement;
+            ElifExps = elifExps;
+            ElifStats = elifStats;
             ElsePart = elseStatement;
         }
 
-        public IExpression Clon() => new IfStatement(Expression.Clon(), IfPart.Clone(), ElsePart is null ? null : ElsePart.Clone());
+        public IExpression Clon() => new IfStatement(Expression.Clon(), IfPart.Clone(), ElifExps.Select(e => e.Clon()).ToArray(), ElifStats.Select(e => e.Clone()).ToArray(), ElsePart is null ? null : ElsePart.Clone());
 
-        public IStatement Clone() => new IfStatement(Expression.Clon(), IfPart.Clone(), ElsePart is null ? null : ElsePart.Clone());
+        public IStatement Clone() => new IfStatement(Expression.Clon(), IfPart.Clone(), ElifExps.Select(e => e.Clon()).ToArray(), ElifStats.Select(e => e.Clone()).ToArray(), ElsePart is null ? null : ElsePart.Clone());
 
         public void Execute()
         {
             bool result = Convert.ToBoolean(Expression.Evaluated());
             if (result)
+            {
                 IfPart.Execute();
-            else if (ElsePart != null)
+                return;
+            }
+            for (int i = 0; i < ElifExps.Length; i++)
+                if (Convert.ToBoolean(ElifExps[i].Evaluated()))
+                {
+                    ElifStats[i].Execute();
+                    return;
+                }
+            if (ElsePart != null)
                 ElsePart.Execute();
         }
 
         public object Evaluated()
         {
-            bool result = Convert.ToBoolean(Expression.Evaluated());
-            if (result)
-                try
-                {
-                    IfPart.Execute();
-                }
-                catch (ReturnStatement ret) { return ret.GetResult(); }
-            else if (ElsePart != null)
-                try
-                {
-                    ElsePart.Execute();
-                }
-                catch (ReturnStatement ret) { return ret.GetResult(); }
+            try
+            {
+                Execute();
+            }
+            catch (ReturnStatement ret)
+            {
+                return ret.GetResult();
+            }
             throw new Exception($"ЕСЛИ ИСПОЛЬЗОВАТЬ ТАК СТРУКТУРУ <{this}> ТО НАДО ЧТО-ТО ВЕРНУТЬ");
         }
 

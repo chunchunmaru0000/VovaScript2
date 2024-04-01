@@ -169,11 +169,19 @@ namespace VovaScript
             IExpression condition = Expression();
             IStatement ifStatements = OneOrBlock();
             IStatement elseStatements;
+
+            List<IExpression> elifsExps = new List<IExpression>();
+            List<IStatement> elifsBlocks = new List<IStatement>();
+            while (Match(TokenType.WORD_ELIF))
+            {
+                elifsExps.Add(Expression());
+                elifsBlocks.Add(OneOrBlock());
+            }
             if (Match(TokenType.WORD_ELSE))
                 elseStatements = OneOrBlock();
             else
                 elseStatements = null;
-            return new IfStatement(condition, ifStatements, elseStatements);
+            return new IfStatement(condition, ifStatements, elifsExps.ToArray(), elifsBlocks.ToArray(), elseStatements);
         }
 
         private IStatement Whily()
