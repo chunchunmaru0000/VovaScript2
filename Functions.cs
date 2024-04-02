@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 
 namespace VovaScript
 {
@@ -1010,10 +1009,9 @@ namespace VovaScript
                         resulted.Add(new object[] { i, lambda.Execute() });
                     }
                     Objects.Pop();
-
                     resulted = resulted.OrderBy(r => r[1]).ToList();
                     List<object> list = new List<object>(listed);
-                    
+
                     for (int i = 0; i < listed.Count; i++)
                         list[i] = listed[Convert.ToInt32(resulted[i][0])];
 
@@ -1185,7 +1183,7 @@ namespace VovaScript
 
         public override string ToString() => $"ОБРЕЗ_ЛЕВ(<>)";
     }
-
+    
     public sealed class TrimEndFunction : IFunction
     {
         public object Execute(object[] x)
@@ -1203,5 +1201,126 @@ namespace VovaScript
         public IFunction Cloned() => new TrimEndFunction();
 
         public override string ToString() => $"ОБРЕЗ_ПРАВ(<>)";
+    }
+
+    public sealed class SumFunction : IFunction
+    {
+        public object Execute(object[] x)
+        {
+            if (x.Length < 1)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+            if (x.Length > 1)
+            {
+                object got = x[1];
+                if (got is IClass)
+                {
+                    IClass classObject = got as IClass;
+                    if (classObject.Body is null)
+                        throw new Exception($"<{x[1]}> НЕ ЯВЛЯЛСЯ ОБЪЕКТОМ ФУНКЦИИ");
+                    if (classObject.Body is UserFunction)
+                    {
+                        UserFunction lambda = classObject.Body as UserFunction;
+                        int argov = lambda.ArgsCount();
+                        if (argov < 1)
+                            throw new Exception(
+                                $"<{lambda}> ИМЕЛ НЕДОСТАТОЧНО АРГУМЕНТОВ\n" +
+                                $"ВОЗМОЖНЫЙ ПОРЯДОК АРГУМЕНТОВ: элемент, индекс, лист");
+                        bool index = lambda.ArgsCount() > 1;
+                        bool array = lambda.ArgsCount() > 2;
+
+                        List<object> listed = x[0] is string || x[0] is List<object> ? SliceExpression.Obj2List(x[0]) :
+                                throw new Exception($"<{x[0]}> НЕ БЫЛ ЛИСТОМ ИЛИ СТРОКОЙ, А <{x[0]}>");
+
+                        double sumFloat = 0;
+
+                        if (listed.Count == 0)
+                            return (double)0;
+
+                        Objects.Push();
+                        for (int i = 0; i < listed.Count; i++)
+                        {
+                            Objects.AddVariable(lambda.GetArgName(0), listed[i]);
+                            if (index)
+                            {
+                                Objects.AddVariable(lambda.GetArgName(1), Convert.ToInt64(i));
+                                if (array)
+                                    Objects.AddVariable(lambda.GetArgName(2), listed);
+                            }
+                            object result = lambda.Execute();
+
+                            if (result is double || result is long)
+                            {
+                                sumFloat += Convert.ToDouble(result);
+                                continue;
+                            }
+                            if (result is string)
+                            {
+                                sumFloat += Convert.ToString(result).Length;
+                                continue;
+                            }
+                            if (result is bool)
+                            {
+                                sumFloat += (bool)result ? 1 : 0;
+                                continue;
+                            }
+                            if (result is List<object>)
+                            {
+                                sumFloat += ((List<object>)result).Count;
+                                continue;
+                            }
+                            if (result is IClass)
+                                throw new Exception($"НЕ ПОДДЕРЖИВАЕТ СУММУ ОБЪЕКТОВ <{result}>, А ТОЛЬКО ЧИСЕЛ");
+                        }
+                        Objects.Pop();
+
+                        return sumFloat;
+                    }
+                    throw new Exception($"<{classObject}> НЕ ДОПУСТИМАЯ ФУНКЦИЯ ДЛЯ ИСПОЛЬЗОВАНИЯ В <{this}>");
+                }
+                throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[1]}> ДЛЯ <{this}>");
+            }
+
+            List<object> list = x[0] is string || x[0] is List<object> ? SliceExpression.Obj2List(x[0]) :
+                                throw new Exception($"<{x[0]}> НЕ БЫЛ ЛИСТОМ ИЛИ СТРОКОЙ, А <{x[0]}>");
+            return list.Sum(l => HelpMe.GiveMeSafeDouble(l));
+        }
+
+        public IFunction Cloned() => new SumFunction();
+
+        public override string ToString() => $"СУММОЙ(<>)";
+    }
+
+    public sealed class CountFunction : IFunction
+    {
+        public object Execute(object[] x)
+        {
+            if (x.Length < 2)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+            string stroka = HelpMe.GiveMeSafeStr(x[0]);
+            string counter = HelpMe.GiveMeSafeStr(x[1]);
+            int clen = counter.Length;
+
+            if (stroka.Length < clen)
+                return (long)0;
+            if (stroka == counter)
+                return (long)1;
+
+            string buffer;
+            long count = 0;
+            int len = stroka.Length - clen + 1;
+           
+            for (int i = 0; i < len; i++)
+            {
+                buffer = stroka.Substring(i, clen);
+                if (buffer == counter)
+                    count++;
+            }
+
+            return count;
+        }
+
+        public IFunction Cloned() => new CountFunction();
+
+        public override string ToString() => $"СЧЕТ(<>)";
     }
 }

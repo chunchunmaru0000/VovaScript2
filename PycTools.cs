@@ -310,6 +310,8 @@ namespace VovaScript
 
         public static int GiveMeSafeInt(object x) => x is long || x is double ? Convert.ToInt32(x) : throw new Exception($"БЫЛ НЕ ЧИСЛОМ, А <{x}>");
 
+        public static double GiveMeSafeDouble(object x) => x is long || x is double ? Convert.ToDouble(x) : x is bool ? (bool)x ? 1 : 0 : throw new Exception($"БЫЛ НЕ ЧИСЛОМ, А <{x}>");
+
         public static string GiveMeSafeStr(object x) => x is bool ? (bool)x ? "Истина" : "Ложь" : x is List<object> ? PrintStatement.ListString((List<object>)x) : Convert.ToString(x);
     }
 }
