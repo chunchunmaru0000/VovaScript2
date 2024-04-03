@@ -308,10 +308,34 @@ namespace VovaScript
             throw new Exception("ФВАПЫАПРШОЩЖВАПЫОЫВАРАПРВАПРВПАРВПРОВПРОШЩЖВААПРТОЛДЮАПРВАПРЛДЬЖЖВАПРФВОЩЗАПОЫПВАПОЫ");
         }
 
-        public static int GiveMeSafeInt(object x) => x is long || x is double ? Convert.ToInt32(x) : throw new Exception($"БЫЛ НЕ ЧИСЛОМ, А <{x}>");
+        public static int GiveMeSafeInt(object x) => 
+            x is long || x is double ? 
+                Convert.ToInt32(x) : 
+            throw new Exception($"БЫЛ НЕ ЧИСЛОМ, А <{x}>");
 
-        public static double GiveMeSafeDouble(object x) => x is long || x is double ? Convert.ToDouble(x) : x is bool ? (bool)x ? 1 : 0 : throw new Exception($"БЫЛ НЕ ЧИСЛОМ, А <{x}>");
+        public static double GiveMeSafeDouble(object x) => 
+            x is long || x is double ? 
+                Convert.ToDouble(x) : 
+            x is bool ? 
+                (bool)x ? 1 : 0 : 
+            throw new Exception($"БЫЛ НЕ ЧИСЛОМ, А <{x}>");
 
-        public static string GiveMeSafeStr(object x) => x is bool ? (bool)x ? "Истина" : "Ложь" : x is List<object> ? PrintStatement.ListString((List<object>)x) : Convert.ToString(x);
+        public static string GiveMeSafeStr(object x) => 
+            x is bool ? 
+                (bool)x ? "Истина" : "Ложь" : 
+            x is List<object> ? 
+                PrintStatement.ListString((List<object>)x) : 
+            Convert.ToString(x);
+
+        public static bool GiveMeSafeBool(object x) => 
+            x is bool ? 
+                (bool)x : 
+            x is string ? 
+                Convert.ToString(x).Length != 0 : 
+            x is long || x is double ? 
+                Convert.ToDouble(x) != 0 : 
+            x is List<object> ?
+                ((List<object>)x).Count != 0 :
+            true;
     }
 }

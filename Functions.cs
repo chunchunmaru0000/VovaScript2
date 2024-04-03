@@ -47,7 +47,6 @@ namespace VovaScript
 
     public sealed class MethodExpression : IExpression
     {
-        public Token ObjectName;
         public Token MethodName;
         public IExpression Borrow;
         public IExpression Pool;
@@ -102,8 +101,6 @@ namespace VovaScript
             if (got is IClass)
             {
                 IClass meth = got as IClass;
-                while (meth.Body is IClass)
-                    meth = meth.Body as IClass;
                 if (meth.Body is UserFunction)
                 {
                     UserFunction userF = meth.Body as UserFunction;
@@ -130,7 +127,7 @@ namespace VovaScript
             throw new Exception($"МЕТОД <{MethodName}> ОКАЗАЛСЯ НЕ МЕТОДОМ А <{got}>");
         }
 
-        public override string ToString() => $"{ObjectName}.{Borrow}";
+        public override string ToString() => $"{Pool}.{Borrow}";
     }
 
     public sealed class Sinus : IFunction
@@ -550,9 +547,7 @@ namespace VovaScript
         {
             if (x.Length < 1)
                 throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
-            if (x[0] is List<object>)
-                return Convert.ToInt64(((List<object>)x[0]).Count);
-            return HelpMe.GiveMeSafeStr(x[0]).Length;
+            return Convert.ToDouble(SliceExpression.Len(x[0]));
             //throw new Exception($"НЕДОПУСТИМЫЙ ТИП ОБЪЕКТА <{x[0]}> ДЛЯ <{this}>");
         }
 

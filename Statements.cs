@@ -155,14 +155,14 @@ namespace VovaScript
 
         public void Execute()
         {
-            bool result = Convert.ToBoolean(Expression.Evaluated());
+            bool result = HelpMe.GiveMeSafeBool(Expression.Evaluated());
             if (result)
             {
                 IfPart.Execute();
                 return;
             }
             for (int i = 0; i < ElifExps.Length; i++)
-                if (Convert.ToBoolean(ElifExps[i].Evaluated()))
+                if (HelpMe.GiveMeSafeBool(ElifExps[i].Evaluated()))
                 {
                     ElifStats[i].Execute();
                     return;
@@ -241,7 +241,7 @@ namespace VovaScript
 
         public void Execute()
         {
-            while(Convert.ToBoolean(Expression.Evaluated()))
+            while(HelpMe.GiveMeSafeBool(Expression.Evaluated()))
             {
                 try
                 {
@@ -295,7 +295,7 @@ namespace VovaScript
 
         public void Execute()
         {
-            for (Definition.Execute(); Convert.ToBoolean(Condition.Evaluated()); Alter.Execute())
+            for (Definition.Execute(); HelpMe.GiveMeSafeBool(Condition.Evaluated()); Alter.Execute())
             {
                 try
                 {

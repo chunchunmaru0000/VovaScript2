@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Schema;
 
 namespace VovaScript
 {
@@ -47,7 +46,7 @@ namespace VovaScript
 
             if (value is IClass)
             {
-                Console.WriteLine("Я НЕ УВЕРЕН ВООБЩЕ ЧТО ЭТО НЕ БУДЕТ ИМЕТЬ НЕ НУДНЫХ ОШИБОК НО ЭТО ТАК ЧТО БЫ БЫЛО ДА");
+                Console.WriteLine("Я НЕ УВЕРЕН ВООБЩЕ ЧТО ЭТО НЕ БУДЕТ ИМЕТЬ НЕ НУЖНЫХ ОШИБОК НО ЭТО ТАК ЧТО БЫ БЫЛО ДА");
                 IClass valueObject = value as IClass;
                 string method;
                 switch (Operation.Type)
@@ -62,7 +61,7 @@ namespace VovaScript
                         method = "_не";
                         break;
                     default:
-                        throw new Exception($"НЕПОДДЕРЖИВАЕМАЯ БИНАРНАЯ ОПЕРАЦИЯ ДЛЯ ДАННЫХ ОБЪЕКТОВ: <{valueObject}> <{Operation.Type}> | <{Value}> <{Operation}>");
+                        throw new Exception($"НЕПОДДЕРЖИВАЕМАЯ БИНАРНАЯ ОПЕРАЦИЯ ДЛЯ ДАННЫХ ОБЪЕКТОВ: <{Value}> <{Operation}>");
                 }
                 object got;
                 if (valueObject.ContainsAttribute(method))
@@ -105,20 +104,11 @@ namespace VovaScript
                     else 
                         return -(double)value;
                 case TokenType.NOT:
-                    if (value is bool)
-                        return !(bool)value;
-                    if (value is string)
-                        return Convert.ToString(value).Length == 0;
-                    if (value is long || value is double)
-                        return Convert.ToDouble(value) == 0;
-                    if (value is List<object>)
-                        return ((List<object>)value).Count == 0;
-                    
-                    throw new Exception($"НЕВОЗМОЖНЫЙ ОБЪЕКТ <" + (value is bool ? (bool)value ? "Истина" : "Ложь" : value) + $"> ДЛЯ ОПЕРАЦИИ <{Operation}>");
+                    return !HelpMe.GiveMeSafeBool(value);
                 default:
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine($"<{Value.Evaluated()}> <{Value}> <{Operation}> <{Operation.View}>");
-                    throw new Exception("ДА КАК ТАК ВООБЩЕ ВОЗМОЖНО ЧТО ЛИБО ПОСТАВИТЬ КРОМЕ + ИЛИ - ПЕРЕД ЧИСЛОМ");
+                    Console.WriteLine($"<{Value.Evaluated()}> <{Value}> <{Operation}>");
+                    throw new Exception("ДА КАК ТАК ВООБЩЕ ВОЗМОЖНО ЧТО ЛИБО ПОСТАВИТЬ КРОМЕ + ИЛИ - ИЛИ ! ПЕРЕД ЗНАЧЕНИЕМ");
             }
         }
 
@@ -144,16 +134,15 @@ namespace VovaScript
         {
             object lft = Left.Evaluated();
             object rght = Right.Evaluated();
-
-            if (lft is List<object>)
-                lft = Convert.ToInt64(((List<object>)lft).Count);
-            if (rght is List<object>)
-                rght = Convert.ToInt64(((List<object>)rght).Count);
+            if (lft is bool)
+                lft = (bool)lft ? (long)1 : (long)0;
+            if (rght is bool)
+                rght = (bool)rght ? (long)1 : (long)0;
 
             if (lft is IClass || rght is IClass)
             {
                 if (!(lft is IClass) || !(rght is IClass))
-                    throw new Exception($"ДВОИЧНЫЕ ДЕЙСТВИЯ МОЖНО ДЕЛАТЬ ТОЛЬКО МЕЖДУ ДВУМЯ ОБЪЕКТАМИ А НЕ ОБЪЕКТОМ И ЧЕМ ЛИБО ЕЩЕ\n{lft}\n{rght}");
+                    throw new Exception($"ДВОИЧНЫЕ ДЕЙСТВИЯ МОЖНО ДЕЛАТЬ ТОЛЬКО МЕЖДУ ДВУМЯ ОБЪЕКТАМИ А НЕ ОБЪЕКТОМ И ЧЕМ ЛИБО ЕЩЕ <{Left}> <{Right}>");
                 IClass leftObject = lft as IClass;
                 string method;
                 switch (Operation.Type)
@@ -180,7 +169,7 @@ namespace VovaScript
                         method = "_безостаточный";
                         break;
                     default:
-                        throw new Exception($"НЕПОДДЕРЖИВАЕМАЯ БИНАРНАЯ ОПЕРАЦИЯ ДЛЯ ДАННЫХ ОБЪЕКТОВ: {lft} {Operation.Type} {rght} | {Left} {Operation} {Right}");
+                        throw new Exception($"НЕПОДДЕРЖИВАЕМАЯ БИНАРНАЯ ОПЕРАЦИЯ ДЛЯ ДАННЫХ ОБЪЕКТОВ: {lft} {Operation} {rght} | {Left} {Operation} {Right}");
                 }
                 object got;
                 if (leftObject.ContainsAttribute(method))
@@ -215,74 +204,104 @@ namespace VovaScript
                 }
                 throw new Exception($"МЕТОД <{Left}> ОКАЗАЛСЯ НЕ МЕТОДОМ А <{got}>");
             }
-            if (lft is string && rght is long)
+
+            if (lft is string && (rght is long || rght is double))
             {
                 string str = Convert.ToString(lft);
                 switch (Operation.Type)
                 {
                     case TokenType.MULTIPLICATION:
                         string ret = "";
-                        for (long i = 0; i < (long)rght; i++)
+                        for (double i = 0; i < Convert.ToDouble(rght); i++)
                             ret += str;
                         return ret;
                     case TokenType.PLUS:
-                        return (string)lft + (long)rght;
+                        return str + Convert.ToDouble(rght);
+                    case TokenType.MINUS:
+                        return str.Replace(Convert.ToString(rght), "");
                     default:
-                        throw new Exception($"НЕПОДДЕРЖИВАЕМАЯЯ ОПЕРАЦИЯ <{Operation}> МЕЖДУ <{lft}> И <{rght}>");
+                        throw new Exception($"НЕПОДДЕРЖИВАЕМАЯЯ ОПЕРАЦИЯ <{Operation}> МЕЖДУ <{Left}> И <{Right}>");
                 }
             }
-            if (lft is long && rght is string)
+            if ((lft is long || lft is double) && rght is string)
             {
                 string str = Convert.ToString(rght);
                 switch (Operation.Type)
                 {
                     case TokenType.MULTIPLICATION:
                         string ret = "";
-                        for (long i = 0; i < (long)lft; i++)
+                        for (double i = 0; i < Convert.ToDouble(lft); i++)
                             ret += str;
                         return ret;
                     case TokenType.PLUS:
-                        return (long)lft + (string)rght;
+                        return Convert.ToDouble(lft) + str;
                     default:
-                        throw new Exception($"НЕПОДДЕРЖИВАЕМАЯЯ ОПЕРАЦИЯ <{Operation}> МЕЖДУ <{lft}> И <{rght}>");
+                        throw new Exception($"НЕПОДДЕРЖИВАЕМАЯЯ ОПЕРАЦИЯ <{Operation}> МЕЖДУ <{Left}> И <{Right}>");
                 }
             }
             if (lft is string && rght is string)
             {
-                string slft = lft is bool ? (bool)lft ? "Истина" : "Ложь" : Convert.ToString(lft);
-                string srght = rght is bool ? (bool)rght ? "Истина" : "Ложь" : Convert.ToString(rght);
+                string slft = Convert.ToString(lft);
+                string srght = Convert.ToString(rght);
                 switch (Operation.Type)
                 {
                     case TokenType.PLUS:
                         return slft + srght;
                     case TokenType.MINUS:
-                        string str = slft;
-                        return str.Replace(srght, "");
+                        return slft.Replace(srght, "");
                     case TokenType.MULTIPLICATION:
                         string result = "";
                         for (int i = 0; i < srght.Length; i++)
                             result += slft + srght;
                         return result;
                     default:
-                        throw new Exception($"НЕПОДДЕРЖИВАЕМАЯ БИНАРНАЯ ОПЕРАЦИЯ ДЛЯ СТРОКИ: {lft} {Operation.Type} {rght} | {Left} {Operation} {Right}");
+                        throw new Exception($"НЕПОДДЕРЖИВАЕМАЯ БИНАРНАЯ ОПЕРАЦИЯ ДЛЯ СТРОКИ: {Left} {Operation} {Right}");
                 }
             }
-            else switch (Operation.Type)
+
+            if (lft is List<object> && !(rght is List<object>))
+            {
+                List<object> llist = (List<object>)lft;
+                switch (Operation.Type)
+                {
+                    case TokenType.PLUS:
+                        llist.Add(rght);
+                        return llist;
+                    default:
+                        throw new Exception($"НЕПОДДЕРЖИВАЕМАЯ БИНАРНАЯ ОПЕРАЦИЯ ДЛЯ: {Left} {Operation} {Right}");
+                }
+            }
+            if (rght is List<object> && !(lft is List<object>))
+            {
+                List<object> rlist = (List<object>)rght;
+                switch (Operation.Type)
+                {
+                    case TokenType.PLUS:
+                        rlist.Add(lft);
+                        return rlist;
+                    default:
+                        throw new Exception($"НЕПОДДЕРЖИВАЕМАЯ БИНАРНАЯ ОПЕРАЦИЯ ДЛЯ: {Left} {Operation} {Right}");
+                }
+            }
+            if (lft is List<object> && rght is List<object>)
+            {
+                List<object> llist = (List<object>)lft;
+                List<object> rlist = (List<object>)rght;
+                switch (Operation.Type)
+                {
+                    case TokenType.PLUS:
+                        llist.AddRange(rlist);
+                        return llist;
+                    default:
+                        throw new Exception($"НЕПОДДЕРЖИВАЕМАЯ БИНАРНАЯ ОПЕРАЦИЯ ДЛЯ: {Left} {Operation} {Right}");
+                }
+            }
+
+            switch (Operation.Type)
             {
                 case TokenType.PLUS:
                     if (lft is double || rght is double) 
                         return Convert.ToDouble(lft) + Convert.ToDouble(rght);
-                    if (lft is List<object>)
-                        if (rght is List<object>)
-                        {
-                            ((List<object>)lft).AddRange((List<object>)rght);
-                            return lft;
-                        }
-                        else
-                        {
-                            ((List<object>)lft).Add(rght);
-                            return lft;
-                        }
                     return Convert.ToInt64(lft) + Convert.ToInt64(rght);
                 case TokenType.MINUS:
                     if (lft is double || rght is double)
@@ -293,17 +312,18 @@ namespace VovaScript
                         return Convert.ToDouble(lft) * Convert.ToDouble(rght);
                     return Convert.ToInt64(lft) * Convert.ToInt64(rght);
                 case TokenType.DIVISION:
-                    if (Convert.ToDouble(rght) != 0)
+                    double drght = Convert.ToDouble(rght);
+                    if (drght != 0)
                     {
                         if (lft is double || rght is double)
-                            return Convert.ToDouble(lft) / Convert.ToDouble(rght);
+                            return Convert.ToDouble(lft) / drght;
                         return Convert.ToInt64(lft) / Convert.ToInt64(rght);
                     }
                     throw new Exception("ЧЕРТИЛА НА 0 ДЕЛИШЬ");
                 case TokenType.POWER:
                     if (lft is double || rght is double)
                         if (Convert.ToDouble(lft) < 0 && rght is double)
-                            throw new Exception($"НЕЛЬЗЯ ПРИ ВОЗВЕДЕНИИ В СТЕПЕНЬ ОРИЦАТЕЛЬНОГО ЧИСЛА ИСПОЛЬЗОВАТЬ В СТЕПЕНИ НЕ ЦЕЛОЕ ЧИСЛО:\n{lft}/{Operation.Type}/{rght}/{Left}/{Operation}/{Right}");
+                            throw new Exception($"НЕЛЬЗЯ ПРИ ВОЗВЕДЕНИИ В СТЕПЕНЬ ОРИЦАТЕЛЬНОГО ЧИСЛА ИСПОЛЬЗОВАТЬ В СТЕПЕНИ НЕ ЦЕЛОЕ ЧИСЛО:\n<{lft}> <{Operation}> <{rght}>");
                         else
                             return Math.Pow(Convert.ToDouble(lft), Convert.ToDouble(rght));
                     return Convert.ToInt64(Math.Pow(Convert.ToDouble(lft), Convert.ToDouble(rght)));
@@ -316,7 +336,7 @@ namespace VovaScript
                         return Convert.ToDouble(lft) / Convert.ToDouble(rght);
                     return Convert.ToInt64(lft) / Convert.ToInt64(rght);
                 default:
-                    throw new Exception($"НЕПОДДЕРЖИВАЕМАЯ БИНАРНАЯ ОПЕРАЦИЯ: <{lft}> <{Operation.Type.GetStringValue()}> <{rght}> | <{Left}> <{Operation}> <{Right}>");
+                    throw new Exception($"НЕПОДДЕРЖИВАЕМАЯ БИНАРНАЯ ОПЕРАЦИЯ: <{Left}> <{Operation}> <{Right}>");
             }
         }
 
@@ -342,18 +362,113 @@ namespace VovaScript
         {
             object olft = Left.Evaluated();
             object orght = Right.Evaluated();
-
-            if (olft is bool && (orght is long || orght is double))
-                olft = Convert.ToDouble(olft);
-            if (orght is bool && (olft is long || olft is double))
-                orght = Convert.ToDouble(orght);
-
-            if (olft is bool && orght is string)
-                orght = Convert.ToString(orght).Length != 0;
-            if (orght is bool && olft is string)
-                olft = Convert.ToString(olft).Length != 0;
-
-            if (olft is string || orght is string) 
+            // simple bools
+            if (olft is bool && orght is bool)
+            {
+                bool lft = Convert.ToBoolean(olft);
+                bool rght = Convert.ToBoolean(orght);
+                switch (Comparation.Type)
+                {
+                    case TokenType.EQUALITY:
+                        return lft == rght;
+                    case TokenType.NOTEQUALITY:
+                        return lft != rght;
+                    case TokenType.AND:
+                        return lft && rght;
+                    case TokenType.OR:
+                        return lft || rght;
+                    default:
+                        throw new Exception($"НЕСРАВНЕННЫЕ УСЛОВИЯ: <{Left}> <{Comparation}> <{Right}>");
+                }
+            }
+            // magic
+            if (olft is IClass || orght is IClass)
+            {
+                if (!(olft is IClass) || !(orght is IClass))
+                    throw new Exception($"ДВОИЧНЫЕ ДЕЙСТВИЯ МОЖНО ДЕЛАТЬ ТОЛЬКО МЕЖДУ ДВУМЯ ОБЪЕКТАМИ А НЕ ОБЪЕКТОМ И ЧЕМ ЛИБО ЕЩЕ <{Left}> <{Right}>");
+                IClass leftObject = olft as IClass;
+                string method;
+                switch (Comparation.Type)
+                {
+                    case TokenType.EQUALITY:
+                        method = "_равен";
+                        break;
+                    case TokenType.NOTEQUALITY:
+                        method = "_неравен";
+                        break;
+                    case TokenType.LESS:
+                        method = "_меньше";
+                        break;
+                    case TokenType.LESSEQ:
+                        method = "_меньше_равен";
+                        break;
+                    case TokenType.MORE:
+                        method = "_больше";
+                        break;
+                    case TokenType.MOREEQ:
+                        method = "_больше_равен";
+                        break;
+                    case TokenType.AND:
+                        method = "_и";
+                        break;
+                    case TokenType.OR:
+                        method = "_или";
+                        break;
+                    default:
+                        throw new Exception($"НЕПОДДЕРЖИВАЕМАЯ БИНАРНАЯ ОПЕРАЦИЯ ДЛЯ ДАННЫХ ОБЪЕКТОВ: {Left} {Comparation} {Right}");
+                }
+                object got;
+                if (leftObject.ContainsAttribute(method))
+                    got = leftObject.GetAttribute(method);
+                else
+                    throw new Exception($"В ОБЪЕКТЕ <{Left}> НЕТУ МЕТОДА <{method}>");
+                if (got is IClass)
+                {
+                    IClass meth = got as IClass;
+                    if (meth.Body is UserFunction)
+                    {
+                        UserFunction userF = meth.Body as UserFunction;
+                        if (userF.ArgsCount() < 1)
+                            throw new Exception($"ДЛЯ ДАННОГО МАГИЧАСКОГО МЕТОДА <УМНОЖЕНИЕ> НУЖЕН ХОТЯ БЫ ОДИН АРГУМЕНТ");
+                        Objects.Push();
+                        // attrs
+                        foreach (var attribute in leftObject.Attributes)
+                            Objects.AddVariable(attribute.Key, attribute.Value);
+                        // arg
+                        Objects.AddVariable(userF.Args[0].View, orght);
+                        // execute
+                        object result = userF.Execute();
+                        // restore
+                        foreach (var variable in Objects.Variables)
+                            if (leftObject.ContainsAttribute(variable.Key))
+                                leftObject.AddAttribute(variable.Key, variable.Value);
+                        Objects.Pop();
+                        return result;
+                    }
+                    throw new Exception("СОННА ВАКЕ НАЙ");
+                }
+                throw new Exception($"МЕТОД <{Left}> ОКАЗАЛСЯ НЕ МЕТОДОМ А <{got}>");
+            }
+            // and and or are most usefull i contemplate, so
+            bool blft = HelpMe.GiveMeSafeBool(olft);
+            bool brght = HelpMe.GiveMeSafeBool(orght);
+            switch (Comparation.Type)
+            {
+                case TokenType.AND:
+                    return blft && brght;
+                case TokenType.OR:
+                    return blft || brght;
+            }
+            // handle if was only one bool
+            if (olft is bool)
+                olft = HelpMe.GiveMeSafeDouble(olft);
+            if (orght is bool)
+                orght = HelpMe.GiveMeSafeDouble(orght);
+            // lists if both
+            if (olft is List<object> && orght is List<object>)
+                return ContainsFunction.CompareListOfLists((List<object>)olft, (List<object>)orght);
+            // strings
+            if (olft is string || orght is string)
             {
                 string slft = Convert.ToString(olft);
                 string srght = Convert.ToString(orght);
@@ -373,15 +488,12 @@ namespace VovaScript
                         return slftl > srghtl;
                     case TokenType.MOREEQ:
                         return slftl >= srghtl;
-                    case TokenType.AND:
-                        return slftl > 0 && srghtl > 0;
-                    case TokenType.OR:
-                        return slftl > 0 || srghtl > 0;
                     default:
                         throw new Exception($"ТАК НЕЛЬЗЯ СРАВНИВАТЬ СТРОКИ: <{Left}> <{Comparation}> <{Right}>");
                 }
             }
-            if (!(olft is bool) && !(orght is bool))
+            // int and float
+            if ((olft is double || olft is long) && (orght is double || orght is long))
             {
                 double lft = Convert.ToDouble(olft);
                 double rght = Convert.ToDouble(orght);
@@ -399,33 +511,35 @@ namespace VovaScript
                         return lft > rght;
                     case TokenType.MOREEQ:
                         return lft >= rght;
-                    case TokenType.AND:
-                        return lft != 0 && rght != 0;
-                    case TokenType.OR:
-                        return lft != 0 || rght != 0;
                     default:
-                        throw new Exception($"НЕСРАВНЕННЫЕ ЧИСЛА: <{lft}> <{Comparation.Type.GetStringValue()}> <{rght}> | <{Left}> <{Comparation}> <{Right}>");
+                        throw new Exception($"НЕСРАВНЕННЫЕ ЧИСЛА: <{Left}> <{Comparation}> <{Right}>");
                 }
             }
-            else if (olft is bool && orght is bool)
+            // strings and numbers
+            if (((olft is double || olft is long) && orght is string) || ((orght is double || orght is long) && olft is string))
             {
-                bool lft = Convert.ToBoolean(olft);
-                bool rght = Convert.ToBoolean(orght);
+                string lft = HelpMe.GiveMeSafeStr(olft);
+                string rght = HelpMe.GiveMeSafeStr(orght);
                 switch (Comparation.Type)
                 {
                     case TokenType.EQUALITY:
                         return lft == rght;
                     case TokenType.NOTEQUALITY:
                         return lft != rght;
-                    case TokenType.AND:
-                        return lft && rght;
-                    case TokenType.OR:
-                        return lft || rght;
+                    case TokenType.LESS:
+                        return lft.Length < rght.Length;
+                    case TokenType.LESSEQ:
+                        return lft.Length <= rght.Length;
+                    case TokenType.MORE:
+                        return lft.Length > rght.Length;
+                    case TokenType.MOREEQ:
+                        return lft.Length >= rght.Length;
                     default:
-                        throw new Exception("НЕСРАВНЕННЫЕ УСЛОВИЯ: <" + (lft ? "Истина" : "Ложь") + $"> <{Comparation.Type.GetStringValue()}> <" + (rght ? "Истина" : "Ложь") + $"> | <{Left}> <{Comparation}> <{Right}>");
+                        throw new Exception($"НЕСРАВНЕННЫЕ ЗНАЧЕНИЯ: <{Left}> <{Comparation}> <{Right}>");
                 }
             }
-            throw new Exception($"НЕЛЬЗЯ СРАВНИВАТЬ РАЗНЫЕ ТИПЫ: <{Left}> <{Comparation}> <{Right}>");
+
+            throw new Exception($"НЕЛЬЗЯ СРАВНИВАТЬ ТАК: <{Left}> <{Comparation}> <{Right}>");
         }
 
         public override string ToString() => $"{Left} {Comparation.View} {Right}";
@@ -839,13 +953,13 @@ namespace VovaScript
         {
             object got = index is null ? null : index.Evaluated();
             if (!(got is null))
-                if (got is long)
+                if (got is long || got is double)
                     if (Convert.ToInt64(got) > int.MaxValue || Convert.ToInt64(got) < int.MinValue)
                         throw new Exception($"ЧИСЛО <{got}> БЫЛО СЛИШКОМ БОЛЬШИМ ИЛИ МАЛЕНЬКИМ ДЛЯ ИНДЕКСА");
                     else
                         return Convert.ToInt32(got);
                 else
-                    throw new Exception($"ЧИСЛО <{got} ВОВСЕ И НЕ ЧИСЛО");
+                    throw new Exception($"ЧИСЛО <{got}> ВОВСЕ И НЕ ЧИСЛО");
             return common;
         }
 

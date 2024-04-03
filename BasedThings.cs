@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace VovaScript
 {
@@ -269,7 +270,23 @@ namespace VovaScript
             Attributes = attributes;
             Body = body;
         }
-        public object Execute(params object[] obj) => Body is null ? throw new Exception($"НЕ ЯВЛЯЕТСЯ ОБЬЕКТОМ ДЛЯ ВЫЗОВА: <{Name}>") : Body.Execute(obj);
+        public object Execute(params object[] obj) 
+        { 
+            if (Body is null)
+            {
+                object got = GetAttribute("_вызов");
+                if (got is IClass)
+                {
+                    IClass method = got as IClass;
+                    if (method.Body is null)
+                        throw new Exception($"НЕ ЯВЛЯЕТСЯ ОБЬЕКТОМ ДЛЯ ВЫЗОВА: <{method}>");
+                    return method.Execute(obj);
+                   // return new MethodExpression(new VariableExpression(new Token() { View = Name }), new Token() { View = "_вызов" }, ).Evaluated();
+                }
+                throw new Exception($"МЕТОД <_вызов> ОКАЗАЛСЯ НЕ МЕТОДОМ А <{got}>");
+            }
+            return Body.Execute(obj);
+        }
         
         public IClass Clone() => new IClass(Name, new Dictionary<string, object>(Attributes), Body is null ? null : Body.Cloned());
 
@@ -321,7 +338,7 @@ namespace VovaScript
     public static partial class Objects
     {
 
-        /*           BASED           */
+        /*          METHODS          */
 
         // system
         public static IClass WriteWithoutSlashN = new IClass("очерк", new Dictionary<string, object>(), new WriteNotLn());
