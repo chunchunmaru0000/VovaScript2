@@ -95,6 +95,10 @@
                     word.Value = true;
                     word.Type = TokenType.WORD_TRUE;
                     return word;
+                case "истину":
+                    word.Value = true;
+                    word.Type = TokenType.WORD_TRUE;
+                    return word;
                 case "правда":
                     word.Value = true;
                     word.Type = TokenType.WORD_TRUE;

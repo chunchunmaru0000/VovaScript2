@@ -313,6 +313,11 @@ namespace VovaScript
                 Convert.ToInt32(x) : 
             throw new Exception($"БЫЛ НЕ ЧИСЛОМ, А <{x}>");
 
+        public static long GiveMeSafeLong(object x) =>
+            x is long || x is double ?
+                Convert.ToInt64(x) :
+            throw new Exception($"БЫЛ НЕ ЧИСЛОМ, А <{x}>");
+
         public static double GiveMeSafeDouble(object x) => 
             x is long || x is double ? 
                 Convert.ToDouble(x) : 

@@ -13,6 +13,7 @@ namespace VovaScript
         public static bool Debug = false;//
         public static bool TimePrint = true;
         public static string Directory = "";
+
         public static void LogTokens(ref Token[] tokens)
         {
             Console.ForegroundColor = ConsoleColor.Cyan;

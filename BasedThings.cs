@@ -343,6 +343,7 @@ namespace VovaScript
         // system
         public static IClass WriteWithoutSlashN = new IClass("очерк", new Dictionary<string, object>(), new WriteNotLn());
         public static IClass Input = new IClass("ввод", new Dictionary<string, object>(), new InputFunction());
+        public static IClass ToDate = new IClass("датой", new Dictionary<string, object>(), new ToDateFunction());
 
         // math
         public static IClass Sinus = new IClass("синус", new Dictionary<string, object>(), new Sinus());
@@ -353,6 +354,7 @@ namespace VovaScript
         public static IClass Max = new IClass("максимум", new Dictionary<string, object>(), new Max());
         public static IClass Min = new IClass("минимум", new Dictionary<string, object>(), new Min());
         public static IClass Square = new IClass("корень", new Dictionary<string, object>(), new Square());
+        public static IClass Randomed = new IClass("случайный", new Dictionary<string, object>(), new RandomFunction());
         
         // io
         public static IClass ReadAllFile = new IClass("вычитать", new Dictionary<string, object>(), new ReadAllFileFunction());
@@ -541,6 +543,8 @@ namespace VovaScript
             { "минимум",  Min.Clone() },
             { "наименьшее",  Min.Clone() },
             { "корень",  Square },
+            { "случайный",  Randomed },
+            { "датой",  ToDate },
 
             { "ввод",  Input.Clone() },
             { "хартия",  Input.Clone() },

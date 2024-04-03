@@ -732,13 +732,11 @@ namespace VovaScript
 
     public sealed class NowExpression : IExpression
     {
-        public double Time;
-
-        public object Evaluated() => (double)DateTime.Now.Ticks / 10000;
+        public object Evaluated() => DateTime.Now.Ticks;
 
         public IExpression Clon() => new NowExpression();
 
-        public override string ToString() => $"СЕЙЧАС<{Time}>";
+        public override string ToString() => $"СЕЙЧАС<>";
     }
 
     public sealed class ListExpression : IExpression

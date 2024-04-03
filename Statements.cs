@@ -28,7 +28,7 @@ namespace VovaScript
         public void Execute()
         {
             object Result = Expression.Evaluated();
-            Objects.AddVariable(Variable.View, Expression.Evaluated());
+            Objects.AddVariable(Variable.View, Result);
         }
 
         public object Evaluated()

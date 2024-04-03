@@ -406,10 +406,7 @@ namespace VovaScript
         public object Execute(object[] x)
         {
             if (x.Length > 0)
-            {
-                string message = HelpMe.GiveMeSafeStr(x[0]);
-                Console.Write(message);
-            }
+                Console.Write(HelpMe.GiveMeSafeStr(x[0]));
             return Console.ReadLine();
         }
 
@@ -1317,5 +1314,46 @@ namespace VovaScript
         public IFunction Cloned() => new CountFunction();
 
         public override string ToString() => $"СЧЕТ(<>)";
+    }
+
+    public sealed class RandomFunction : IFunction
+    {
+        public static Random rnd = new Random();
+
+        public object Execute(object[] x)
+        {
+            if (x.Length == 0)
+                return rnd.NextDouble();
+
+            if (x.Length < 2)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+
+            int from = HelpMe.GiveMeSafeInt(x[0]);
+            int to = HelpMe.GiveMeSafeInt(x[1]);
+            return Convert.ToInt64(rnd.Next(from, to));
+        }
+
+        public IFunction Cloned() => new RandomFunction();
+
+        public override string ToString() => $"СЛУЧАЙНЫЙ(<>)";
+    }
+
+    public sealed class ToDateFunction : IFunction
+    {
+        public static Random rnd = new Random();
+
+        public object Execute(object[] x)
+        {
+            if (x.Length < 1)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+
+            long time = HelpMe.GiveMeSafeLong(x[0]);
+            DateTime date = DateTime.FromBinary(time);
+            return date.TimeOfDay.ToString();
+        }
+
+        public IFunction Cloned() => new RandomFunction();
+
+        public override string ToString() => $"ДАТОЙ(<>)";
     }
 }
