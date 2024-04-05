@@ -39,6 +39,34 @@ namespace VovaScript
             Console.ResetColor();
         }
 
+        public static void PrintError(Exception error)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            if (error is DllNotFoundException)
+            {
+                Console.WriteLine("НЕ БЫЛО НАЙДЕННО НЕКАЯ БИБЛИОТЕКА ДЛЯ РАБОТЫ ЯЗЫКА, ВОЗМОЖНО ЭТО БЫЛА Newtonsoft.Json.dll");
+                return;
+            }
+            if (error is ReturnStatement)
+            {
+                ReturnStatement ret = error as ReturnStatement;
+                Console.WriteLine($"КАК-ТО НЕ ТАК ВЕРНУЛ НО ВЕРНУЛО: <{ret.GetResult()}>");
+                return;
+            }
+            if (error is BreakStatement)
+            {
+                Console.WriteLine("ЗАЧЕМ-ТО БЫЛО ИСПОЛЬЗОВАННО <выйти> ВНЕ ЦИКЛА");
+                return;
+            }
+            if (error is ContinueStatement)
+            {
+                Console.WriteLine("ЗАЧЕМ-ТО БЫЛО ИСПОЛЬЗОВАННО <продолжить> ВНЕ ЦИКЛА");
+                return;
+            }
+            Console.WriteLine(error.Message);
+            Console.ResetColor();
+        }
+
         public static void PycOnceLoad(string code, string dir)
         {
             Directory = dir;
@@ -49,17 +77,14 @@ namespace VovaScript
                 var tokens = new Tokenizator(code).Tokenize();
                 if (Tokens) LogTokens(ref tokens);
 
-                //new Parser(tokens).Run(Debug, PrintVariablesInDebug, PrintFunctionsInDebug);
                 IStatement program = new Parser(tokens).Parse();
-                if (PrintProgram)
-                    Console.WriteLine(program);
+                if (PrintProgram) Console.WriteLine(program);
                 program.Execute();
 
                 stopwatch.Stop();
-                if (TimePrint)
-                    Console.WriteLine(stopwatch.Elapsed);
-            } catch (ReturnStatement ret) { Console.ForegroundColor = ConsoleColor.Red; Console.WriteLine($"КАК-ТО НЕ ТАК ВЕРНУЛ НО ВЕРНУЛО: <{ret.GetResult()}>"); Console.ResetColor(); } catch (Exception error) { Console.ForegroundColor = ConsoleColor.Red; Console.WriteLine(error.Message); Console.ResetColor(); }
-
+                if (TimePrint) Console.WriteLine(stopwatch.Elapsed);
+            } catch (Exception e) { PrintError(e); } 
+          
             PrintVariables(PrintVariablesAfterDebug);
         }
 
@@ -70,28 +95,7 @@ namespace VovaScript
                 Console.ResetColor();
                 Console.Write("> ");
                 string code = Console.ReadLine() ?? "";
-                switch (code.Trim())
-                {
-                    case "Ё ДЕБАГ Ё":
-                        Debug = !Debug;
-                        Console.WriteLine(Debug ? "Истина" : "Ложь");
-                        break;
-                    case "Ё ПЕРЕМЕННЫЕ ПОСЛЕ Ё":
-                        PrintVariablesAfterDebug = !PrintVariablesAfterDebug;
-                        Console.WriteLine(PrintVariablesAfterDebug ? "Истина" : "Ложь");
-                        break;
-                    case "Ё ПЕРЕМЕННЫЕ Ё":
-                        PrintVariablesInDebug = !PrintVariablesInDebug;
-                        Console.WriteLine(PrintVariablesInDebug ? "Истина" : "Ложь");
-                        break;
-                    case "Ё ТОКЕНЫ Ё":
-                        Tokens = !Tokens;
-                        Console.WriteLine(Tokens ? "Истина" : "Ложь");
-                        break;
-                    default:
-                        PycOnceLoad(code, Directory);
-                        break;
-                }
+                PycOnceLoad(code, Directory);
             }
         }
     }
