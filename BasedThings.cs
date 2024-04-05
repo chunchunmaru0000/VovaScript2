@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 
 namespace VovaScript
 {
@@ -224,15 +223,31 @@ namespace VovaScript
         ALL,
     }
 
+    public class Location
+    {
+        public int Line { get; set; }
+        public int Letter { get; set; }
+
+        public Location(int line, int letter)
+        {
+            Line = line;
+            Letter = letter;
+        }
+
+        public override string ToString() => $"<СТРОКА {Line}, СИМВОЛ {Letter}>";
+    }
+
     public class Token
     {
         public string View { get; set; }
         public object Value { get; set; }
         public TokenType Type { get; set; }
 
-        public Token Clone() => new Token() { Value = Value, View = View, Type = Type };
+        public Location Location { get; set; }
 
-        public override string ToString() => $"<{View}> <{Convert.ToString(Value)}> <{Type.GetStringValue()}>";
+        public Token Clone() => new Token() { Value = Value, View = View, Type = Type, Location = Location };
+
+        public override string ToString() => $"<{View}> <{Convert.ToString(Value)}> <{Type.GetStringValue()}> <{Location.ToString()}>";
     }
 
     public interface IExpression

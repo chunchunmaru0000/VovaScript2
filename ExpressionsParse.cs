@@ -180,7 +180,7 @@ namespace VovaScript
                 return result;
             }
             return (IExpression)Statement();
-            throw new Exception($"{Near(6)}НЕВОЗМОЖНОЕ МАТЕМАТИЧЕСКОЕ ВЫРАЖЕНИЕ: <{current}>\nПОЗИЦИЯ: ЛИНИЯ<{line}> СИМВОЛ<{position}>");
+            throw new Exception($"{Near(6)}НЕВОЗМОЖНОЕ МАТЕМАТИЧЕСКОЕ ВЫРАЖЕНИЕ: <{current}>");
         }
 
         private IExpression Aftery()

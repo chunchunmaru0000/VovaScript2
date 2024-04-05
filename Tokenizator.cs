@@ -7,13 +7,19 @@ namespace VovaScript
     {
         private string code;
         private int position;
+        private int line;
+        private int location;
+        private int startLine;
         private bool commented = false;
-        private static Token Nothing = new Token() { View = "", Value = null, Type = TokenType.WHITESPACE };
+        private static Token Nothing = new Token() { View = "", Value = null, Type = TokenType.WHITESPACE, Location = new Location(-1, -1) };
 
         public Tokenizator(string code) 
         {
             this.code = code;
             position = 0;
+            line = 1;
+            location = position;
+            startLine = 0;
         }
 
         private char Current
@@ -26,20 +32,28 @@ namespace VovaScript
             }
         }
 
-        private void Next() { position++; }
+        private void Next() 
+        { 
+            position++;
+            if (Current == '\n')
+            {
+                Next();
+                startLine = position;
+                line++;
+                location = 0;
+            }
+            location = position - startLine;
+        }
+
+        private Location Loc() => new Location(line, location);
 
         private Token NextToken()
         {
             if (Current == '\0')
-                return new Token() { View = null, Value = null, Type = TokenType.EOF };
+                return new Token() { View = null, Value = null, Type = TokenType.EOF, Location = Loc() };
             if (char.IsWhiteSpace(Current))
-            {
-                int start = position;
                 while (char.IsWhiteSpace(Current))
                     Next();
-                string word = code.Substring(start, position - start);
-                return new Token() { View = word, Value = null, Type = TokenType.WHITESPACE };
-            }
             if (Current == '"' || Current == '\'')
             {
                 if (!commented) {
@@ -83,7 +97,7 @@ namespace VovaScript
                             throw new Exception($"НЕЗАКОНЧЕНА СТРОКА: позиция<{position}> буфер<{buffer}>");
                     }
                     Next();
-                    return new Token() { View = buffer, Value = buffer, Type = TokenType.STRING };
+                    return new Token() { View = buffer, Value = buffer, Type = TokenType.STRING, Location = Loc() };
                 }
                 else
                 {
@@ -108,9 +122,9 @@ namespace VovaScript
                 }
                 string word = code.Substring(start, position - start).Replace('.', ',');
                 if (dots == 0)
-                    return new Token() { View = word, Value = Convert.ToInt64(word), Type = TokenType.INTEGER };
+                    return new Token() { View = word, Value = Convert.ToInt64(word), Type = TokenType.INTEGER, Location = Loc() };
                 if (dots == 1)
-                    return new Token() { View = word, Value = Convert.ToDouble(word), Type = TokenType.DOUBLE };
+                    return new Token() { View = word, Value = Convert.ToDouble(word), Type = TokenType.DOUBLE, Location = Loc() };
                 throw new Exception("МНОГА ТОЧЕК ДЛЯ ЧИСЛА");
             }
             if (PycTools.Usable(Current))
@@ -119,7 +133,7 @@ namespace VovaScript
                 while (PycTools.Usable(Current))
                     Next();
                 string word = code.Substring(start, position - start);
-                return Worder.Wordizator(new Token() { View = word, Value = null, Type = TokenType.WORD });
+                return Worder.Wordizator(new Token() { View = word, Value = null, Type = TokenType.WORD, Location = Loc() });
             }
             switch (Current)
             {
@@ -131,119 +145,119 @@ namespace VovaScript
                         if (Current == '=')
                         {
                             Next();
-                            return new Token() { View = "===", Value = null, Type = TokenType.ARROW };
+                            return new Token() { View = "===", Value = null, Type = TokenType.ARROW, Location = Loc() };
                         }
-                        return new Token() { View = "==", Value = null, Type = TokenType.EQUALITY };
+                        return new Token() { View = "==", Value = null, Type = TokenType.EQUALITY, Location = Loc() };
                     }
                     if (Current == '>')
                     {
                         Next();
-                        return new Token() { View = "=>", Value = null, Type = TokenType.ARROW };
+                        return new Token() { View = "=>", Value = null, Type = TokenType.ARROW, Location = Loc() };
                     }
-                    return new Token() { View = "=", Value = null, Type = TokenType.DO_EQUAL };
+                    return new Token() { View = "=", Value = null, Type = TokenType.DO_EQUAL, Location = Loc() };
                 case '/':
                     Next();
                     if (Current == '/')
                     {
                         Next();
-                        return new Token() { View = "//", Value = null, Type = TokenType.DIV };
+                        return new Token() { View = "//", Value = null, Type = TokenType.DIV, Location = Loc() };
                     }
                     if (Current == '=')
                     {
                         Next();
-                        return new Token() { View = "/=", Value = null, Type = TokenType.DIVEQ };
+                        return new Token() { View = "/=", Value = null, Type = TokenType.DIVEQ, Location = Loc() };
                     }
-                    return new Token() { View = "/", Value = null, Type = TokenType.DIVISION };
+                    return new Token() { View = "/", Value = null, Type = TokenType.DIVISION, Location = Loc() };
                 case '!':
                     Next();
                     if (Current == '=')
                     {
                         Next();
-                        return new Token() { View = "!=", Value = null, Type = TokenType.NOTEQUALITY };
+                        return new Token() { View = "!=", Value = null, Type = TokenType.NOTEQUALITY, Location = Loc() };
                     }
-                    return new Token() { View = "!", Value = null, Type = TokenType.NOT };
+                    return new Token() { View = "!", Value = null, Type = TokenType.NOT, Location = Loc() };
                 case '*':
                     Next();
                     if (Current == '*')
                     {
                         Next();
-                        return new Token() { View = "**", Value = null, Type = TokenType.POWER };
+                        return new Token() { View = "**", Value = null, Type = TokenType.POWER, Location = Loc() };
                     }
                     if (Current == '=')
                     {
                         Next();
-                        return new Token() { View = "*=", Value = null, Type = TokenType.MULEQ };
+                        return new Token() { View = "*=", Value = null, Type = TokenType.MULEQ, Location = Loc() };
                     }
-                    return new Token() { View = "*", Value = null, Type = TokenType.MULTIPLICATION };
+                    return new Token() { View = "*", Value = null, Type = TokenType.MULTIPLICATION, Location = Loc() };
                 case '+':
                     Next();
                     if (Current == '+')
                     {
                         Next();
-                        return new Token() { View = "++", Value = null, Type = TokenType.PLUSPLUS };
+                        return new Token() { View = "++", Value = null, Type = TokenType.PLUSPLUS, Location = Loc() };
                     }
                     if (Current == '=')
                     {
                         Next();
-                        return new Token() { View = "+=", Value = null, Type = TokenType.PLUSEQ };
+                        return new Token() { View = "+=", Value = null, Type = TokenType.PLUSEQ, Location = Loc() };
                     }
-                    return new Token() { View = "+", Value = null, Type = TokenType.PLUS };
+                    return new Token() { View = "+", Value = null, Type = TokenType.PLUS, Location = Loc() };
                 case '-':
                     Next();
                     if (Current == '-')
                     {
                         Next();
-                        return new Token() { View = "--", Value = null, Type = TokenType.MINUSMINUS };
+                        return new Token() { View = "--", Value = null, Type = TokenType.MINUSMINUS, Location = Loc() };
                     }
                     if (Current == '=')
                     {
                         Next();
-                        return new Token() { View = "-=", Value = null, Type = TokenType.MINUSEQ };
+                        return new Token() { View = "-=", Value = null, Type = TokenType.MINUSEQ, Location = Loc() };
                     }
-                    return new Token() { View = "-", Value = null, Type = TokenType.MINUS };
+                    return new Token() { View = "-", Value = null, Type = TokenType.MINUS, Location = Loc() };
                 case '<':
                     Next();
                     if (Current == '=')
                     {
                         Next();
-                        return new Token() { View = "<=", Value = null, Type = TokenType.LESSEQ };
+                        return new Token() { View = "<=", Value = null, Type = TokenType.LESSEQ, Location = Loc() };
                     }
-                    return new Token() { View = "<", Value = null, Type = TokenType.LESS };
+                    return new Token() { View = "<", Value = null, Type = TokenType.LESS, Location = Loc() };
                 case '>':
                     Next();
                     if (Current == '=')
                     {
                         Next();
-                        return new Token() { View = ">=", Value = null, Type = TokenType.MOREEQ };
+                        return new Token() { View = ">=", Value = null, Type = TokenType.MOREEQ, Location = Loc() };
                     }
-                    return new Token() { View = ">", Value = null, Type = TokenType.MORE };
+                    return new Token() { View = ">", Value = null, Type = TokenType.MORE, Location = Loc() };
                 case '@':
                     Next();
-                    return new Token() { View = "@", Value = null, Type = TokenType.DOG };
+                    return new Token() { View = "@", Value = null, Type = TokenType.DOG, Location = Loc() };
                 case ';':
                     Next();
-                    return new Token() { View = ";", Value = null, Type = TokenType.SEMICOLON };
+                    return new Token() { View = ";", Value = null, Type = TokenType.SEMICOLON, Location = Loc() };
                 case '(':
                     Next();
-                    return new Token() { View = "(", Value = null, Type = TokenType.LEFTSCOB };
+                    return new Token() { View = "(", Value = null, Type = TokenType.LEFTSCOB, Location = Loc() };
                 case ')':
                     Next();
-                    return new Token() { View = ")", Value = null, Type = TokenType.RIGHTSCOB };
+                    return new Token() { View = ")", Value = null, Type = TokenType.RIGHTSCOB, Location = Loc() };
                 case '[':
                     Next();
-                    return new Token() { View = "[", Value = null, Type = TokenType.LCUBSCOB };
+                    return new Token() { View = "[", Value = null, Type = TokenType.LCUBSCOB, Location = Loc() };
                 case ']':
                     Next();
-                    return new Token() { View = "]", Value = null, Type = TokenType.RCUBSCOB };
+                    return new Token() { View = "]", Value = null, Type = TokenType.RCUBSCOB, Location = Loc() };
                 case '{':
                     Next();
-                    return new Token() { View = "{", Value = null, Type = TokenType.LTRISCOB };
+                    return new Token() { View = "{", Value = null, Type = TokenType.LTRISCOB, Location = Loc() };
                 case '}':
                     Next();
-                    return new Token() { View = "}", Value = null, Type = TokenType.RTRISCOB };
+                    return new Token() { View = "}", Value = null, Type = TokenType.RTRISCOB, Location = Loc() };
                 case '%':
                     Next();
-                    return new Token() { View = "%", Value = null, Type = TokenType.MOD };
+                    return new Token() { View = "%", Value = null, Type = TokenType.MOD, Location = Loc() };
                 case '.':
                     Next();
                     if (Current == '.')
@@ -252,32 +266,34 @@ namespace VovaScript
                         if (Current == '=')
                         {
                             Next();
-                            return new Token() { View = "..=", Value = null, Type = TokenType.DOTDOTEQ };
+                            return new Token() { View = "..=", Value = null, Type = TokenType.DOTDOTEQ, Location = Loc() };
                         }
-                        return new Token() { View = "..", Value = null, Type = TokenType.DOTDOT };
+                        return new Token() { View = "..", Value = null, Type = TokenType.DOTDOT, Location = Loc() };
                     }
-                    return new Token() { View = ".", Value = null, Type = TokenType.DOT };
+                    return new Token() { View = ".", Value = null, Type = TokenType.DOT, Location = Loc() };
                 case ',':
                     Next();
-                    return new Token() { View = ",", Value = null, Type = TokenType.COMMA };
+                    return new Token() { View = ",", Value = null, Type = TokenType.COMMA, Location = Loc() };
                 case 'Ё':
                     Next();
                     commented = !commented;
-                    return new Token() { View = "Ё", Value = null, Type = TokenType.COMMENTO };
+                    return new Token() { View = "Ё", Value = null, Type = TokenType.COMMENTO, Location = Loc() };
                 case '\n':
                     Next();
-                    return new Token() { View = "\n", Value = null, Type = TokenType.SLASH_N };
+                    return new Token() { View = "\n", Value = null, Type = TokenType.SLASH_N, Location = Loc() };
                 case ':':
                     Next();
-                    return new Token() { View = ":", Value = null, Type = TokenType.COLON };
+                    return new Token() { View = ":", Value = null, Type = TokenType.COLON, Location = Loc() };
                 case '?':
                     Next();
-                    return new Token() { View = "?", Value = null, Type = TokenType.QUESTION };
+                    return new Token() { View = "?", Value = null, Type = TokenType.QUESTION, Location = Loc() };
                 case '|':
                     Next();
-                    return new Token() { View = "|", Value = null, Type = TokenType.STICK };
+                    return new Token() { View = "|", Value = null, Type = TokenType.STICK, Location = Loc() };
+                case '\0':
+                    return new Token() { View = null, Value = null, Type = TokenType.EOF, Location = Loc() };
                 default:
-                    throw new Exception("НЕ СУЩЕСТВУЮЩИЙ СИМВОЛ В ДАННОМ ЯЗЫКЕ");
+                    throw new Exception($"{Loc()}\nНЕ СУЩЕСТВУЮЩИЙ СИМВОЛ В ДАННОМ ЯЗЫКЕ <{Current}> <{(int)Current}>");
             }
         }
 
