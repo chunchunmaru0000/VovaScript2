@@ -247,7 +247,7 @@ namespace VovaScript
 
         public Token Clone() => new Token() { Value = Value, View = View, Type = Type, Location = Location };
 
-        public override string ToString() => $"<{View}> <{Convert.ToString(Value)}> <{Type.GetStringValue()}> <{Location.ToString()}>";
+        public override string ToString() => $"<{View}> <{Convert.ToString(Value)}> <{Type.GetStringValue()}> <{Location}>";
     }
 
     public interface IExpression

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 
 namespace VovaScript
@@ -42,28 +43,24 @@ namespace VovaScript
         public static void PrintError(Exception error)
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            if (error is DllNotFoundException)
-            {
-                Console.WriteLine("НЕ БЫЛО НАЙДЕННО НЕКАЯ БИБЛИОТЕКА ДЛЯ РАБОТЫ ЯЗЫКА, ВОЗМОЖНО ЭТО БЫЛА Newtonsoft.Json.dll");
-                return;
-            }
-            if (error is ReturnStatement)
+            if (error is FileNotFoundException)
+                Console.WriteLine("НЕ БЫЛА НАЙДЕННА НЕКАЯ БИБЛИОТЕКА ДЛЯ РАБОТЫ ЯЗЫКА, ВОЗМОЖНО ЭТО БЫЛА Newtonsoft.Json.dll");
+
+            else if (error is ReturnStatement)
             {
                 ReturnStatement ret = error as ReturnStatement;
                 Console.WriteLine($"КАК-ТО НЕ ТАК ВЕРНУЛ НО ВЕРНУЛО: <{ret.GetResult()}>");
-                return;
             }
-            if (error is BreakStatement)
-            {
+
+            else if (error is BreakStatement)
                 Console.WriteLine("ЗАЧЕМ-ТО БЫЛО ИСПОЛЬЗОВАННО <выйти> ВНЕ ЦИКЛА");
-                return;
-            }
-            if (error is ContinueStatement)
-            {
+
+            else if (error is ContinueStatement)
                 Console.WriteLine("ЗАЧЕМ-ТО БЫЛО ИСПОЛЬЗОВАННО <продолжить> ВНЕ ЦИКЛА");
-                return;
-            }
-            Console.WriteLine(error.Message);
+
+            else
+                Console.WriteLine(error.Message);
+
             Console.ResetColor();
         }
 

@@ -62,6 +62,7 @@
     <None Include=".gitignore" />
     <None Include="packages.config" />
     <None Include="about\SYSNTAX.md" />
+    <None Include="README.md" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

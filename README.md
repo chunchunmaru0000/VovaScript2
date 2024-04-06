@@ -32,3 +32,31 @@ namespace Negr
 ```
 VovaScript2.PycOnceLoad("код", filename);
 ```
+
+## Свои функции
+
+Имеется возможность написать на C# свою функцию или любой другой объект поддерживаемый языком.
+
+Пример:
+
+```
+    sealed class VovaFunction : IFunction
+    {
+        public object Execute(object[] x) => "вова";
+
+        public IFunction Cloned() => new VovaFunction();
+
+        public override string ToString() => $"ВОВА(<>)";
+    }
+
+    class Program
+    {
+        public static IClass Vova = new IClass("вова", new Dictionary<string, object>(), new VovaFunction());
+
+        static void Main()
+        {
+            Objects.AddVariable("вова", Vova);
+            VovaScript2.Pyc();
+        }
+    }
+```
