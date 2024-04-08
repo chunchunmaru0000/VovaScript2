@@ -102,7 +102,7 @@ namespace VovaScript
                     if (value is long)
                         return -Convert.ToInt64(value);
                     else 
-                        return -(double)value;
+                        return -HelpMe.GiveMeSafeDouble(value);
                 case TokenType.NOT:
                     return !HelpMe.GiveMeSafeBool(value);
                 default:
@@ -1092,4 +1092,10 @@ namespace VovaScript
 
         public override string ToString() => $"ОТ {From} ДО {Till}";
     }
+
+  //  public sealed class FullNodeExpression : IExpression
+  //  {
+
+
+    //}
 }

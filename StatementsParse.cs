@@ -30,13 +30,33 @@ namespace VovaScript
 
         private IStatement OpAssigny()
         {
-            Token variable = Current;
-            Consume(TokenType.VARIABLE);
-            Token operation = Current;
-            Consume(operation.Type);
+            Token variable = Consume(TokenType.VARIABLE);
+            Token operation = Consume(Current.Type);
             IExpression expression = Expression();
+            Token op = new Token() { Location = Current.Location };
+            switch (operation.Type)
+            {
+                case TokenType.PLUSEQ:
+                    op.Type = TokenType.PLUS;
+                    op.View = "+";
+                    break;
+                case TokenType.MINUSEQ:
+                    op.Type = TokenType.MINUS;
+                    op.View = "-";
+                    break;
+                case TokenType.MULEQ:
+                    op.Type = TokenType.MULTIPLICATION;
+                    op.View = "*";
+                    break;
+                case TokenType.DIVEQ:
+                    op.Type = TokenType.DIVISION;
+                    op.View = "/";
+                    break;
+                default:
+                    break;
+            }
             Sep();
-            return new OperationAssignStatement(variable, operation, expression);
+            return new AssignStatement(variable, new BinExpression(new VariableExpression(variable), op, expression));
         }
 
         public VarAttrSliceNode ParseFullObjNode()

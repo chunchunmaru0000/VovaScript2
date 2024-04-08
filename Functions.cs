@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Xml.Linq;
 
 namespace VovaScript
 {
@@ -509,26 +510,39 @@ namespace VovaScript
 
             try
             {
-                if (mode.ToLower() == "пере")
+                if (!File.Exists(file))
+                    File.Create(file);
+
+                if (mode == "пере")
+                {
                     using (StreamWriter writer = new StreamWriter(file, false, System.Text.Encoding.UTF8))
+                    {
                         writer.WriteLine(data); 
+                    }
+                }
                 else
-                    using (StreamWriter writer = new StreamWriter(file, true, System.Text.Encoding.UTF8))
-                        switch (mode.ToLower())
+                {
+                    using (StreamWriter writer2 = new StreamWriter(file, true, System.Text.Encoding.UTF8))
+                    {
+                        switch (mode)
                         {
                             case "до":
-                                writer.Write(data);
+                                writer2.Write(data);
                                 break;
                             case "линию":
-                                writer.WriteLine(data);
+                                writer2.WriteLine(data);
                                 break;
                             default:
+                                Console.ForegroundColor = ConsoleColor.Red;
+                                Console.WriteLine($"НЕСУЩЕСТВУЮЩИЙ РЕЖИМ ЗАПИСИ <{mode}>: " + file);
                                 throw new Exception($"НЕСУЩЕСТВУЮЩИЙ РЕЖИМ ЗАПИСИ <{mode}>: " + file);
                         }
+                    }
+                }
             }
-            catch (IOException)
+            catch
             {
-                throw new Exception("НЕ ПОЛУЧИЛОСЬ ЗАПИСАТЬ В ФАЙЛ: " + file);
+                throw new Exception($"НЕ ПОЛУЧИЛОСЬ ЗАПИСАТЬ В ФАЙЛ: <{file}> <{mode}> <{data}>");
             }
             return x;
         }
@@ -704,7 +718,6 @@ namespace VovaScript
                     List<object> listed = x[0] is string || x[0] is List<object> ? SliceExpression.Obj2List(x[0]) : 
                             throw new Exception($"<{x[0]}> НЕ БЫЛ ЛИСТОМ ИЛИ СТРОКОЙ, А <{x[0]}>");
                     List<object> list = new List<object>(listed);
-
                     Objects.Push();
                     for (int i = 0; i < list.Count; i++)
                     {
@@ -717,10 +730,10 @@ namespace VovaScript
                         }
                         object result = lambda.Execute();
                         list[i] = result is bool && wasString ? (bool)result ? "Истина" : "Ложь" : result;
-                        // check if size of list was changed and will change it online in перебор
-                        listed = x[0] is string || x[0] is List<object> ? SliceExpression.Obj2List(x[0]) :
-                            throw new Exception($"<{x[0]}> НЕ БЫЛ ЛИСТОМ ИЛИ СТРОКОЙ, А <{x[0]}>");
-                        list = new List<object>(listed);
+                        //check if size of list was changed and will change it online in перебор
+                        if (list.Count < listed.Count)
+                            list.AddRange(listed.Skip(list.Count));
+                        // i dont thing it will work properly always but i dunno
                     }
                     Objects.Pop();
 
