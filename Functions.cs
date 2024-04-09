@@ -327,7 +327,6 @@ namespace VovaScript
                 catch (IOException)
                 {
                     throw new Exception("НЕ ПОЛУЧИЛОСЬ ПРОЧИТАТЬ ФАЙЛ В: " + file);
-
                 }
             else
                 try
@@ -511,7 +510,7 @@ namespace VovaScript
             try
             {
                 if (!File.Exists(file))
-                    File.Create(file);
+                    using (FileStream fs = File.Create(file)) { }
 
                 if (mode == "пере")
                 {
@@ -544,7 +543,7 @@ namespace VovaScript
             {
                 throw new Exception($"НЕ ПОЛУЧИЛОСЬ ЗАПИСАТЬ В ФАЙЛ: <{file}> <{mode}> <{data}>");
             }
-            return x;
+            return x[0];
         }
 
         public IFunction Cloned() => new WritingFileFunction();
