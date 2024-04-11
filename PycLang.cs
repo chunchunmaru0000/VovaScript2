@@ -8,10 +8,10 @@ namespace VovaScript
     public static class VovaScript2
     {
         public static bool Tokens = false;
-        public static bool PrintVariablesInDebug = false;//
+        public static bool PrintVariablesInDebug = false;   //
         public static bool PrintVariablesAfterDebug = false;//
-        public static bool PrintProgram = false;//
-        public static bool Debug = false;//
+        public static bool PrintProgram = false;            //
+        public static bool Debug = false;                   //
         public static bool TimePrint = true;
         public static string Directory = "";
 

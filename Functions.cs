@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Xml.Linq;
 
 namespace VovaScript
 {
@@ -392,7 +391,7 @@ namespace VovaScript
         {
             if (x.Length == 0)
                 throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
-            Console.Write(string.Join(" ", x));
+            Console.Write(string.Join(" ", x.Select(h => HelpMe.GiveMeSafeStr(h))));
             return Objects.NOTHING;
         }
 
@@ -1367,5 +1366,55 @@ namespace VovaScript
         public IFunction Cloned() => new RandomFunction();
 
         public override string ToString() => $"ДАТОЙ(<>)";
+    }
+
+    sealed class BinFunction : IFunction
+    {
+        public object Execute(object[] x)
+        {
+            if (x.Length < 2)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+
+            long number = HelpMe.GiveMeSafeLong(x[0]);
+            int lenght = HelpMe.GiveMeSafeInt(x[1]);
+
+            string result = Convert.ToString(number, 2);
+            while (result.Length < lenght)
+                result = "0" + result;
+
+            return result;
+        }
+
+        public IFunction Cloned() => new BinFunction();
+
+        public override string ToString() => $"ДВОИЧНЫМ(<>)";
+    }
+
+    sealed class BinPlusFunction : IFunction
+    {
+        public object Execute(object[] x)
+        {
+            if (x.Length < 2)
+                throw new Exception($"НЕДОСТАТОЧНО АРГУМЕНТОВ ДЛЯ <{this}>, БЫЛО: <{x.Length}>");
+            try
+            {
+                string str = HelpMe.GiveMeSafeStr(x[0]);
+                long left = Convert.ToInt64(str, 2);
+                long right = HelpMe.GiveMeSafeLong(x[1]);
+                //Console.WriteLine(left + " | " + right);
+                string result = Convert.ToString(left + right, 2);
+                while (result.Length < str.Length)
+                    result = "0" + result;
+
+                return result;
+            }
+            catch (OverflowException) 
+                  { throw new Exception($"ЧИСЛО <{x[0]}> БЫЛО СЛИШКОМ ВЕЛИКО ИЛИ МАЛО ДЛЯ ЧИЕЛ ПОДДЕРЖИВАЕМЫХ НА ДАННЫЙ МОМЕНТ"); }
+            catch { throw new Exception($"ЧТО-ТО ИЗ <{HelpMe.GiveMeSafeStr(x[0])}> ИЛИ <{HelpMe.GiveMeSafeStr(x[1])}> НЕ БЫЛО КОРРЕКТНЫМ ПАРАМЕТРОМ ДЛЯ <{this}>"); }
+        }
+
+        public IFunction Cloned() => new BinPlusFunction();
+
+        public override string ToString() => $"ДВОИЧ_ПЛЮС(<>)";
     }
 }

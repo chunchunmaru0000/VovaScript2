@@ -911,13 +911,20 @@ namespace VovaScript
                                                          To is null ? null : To.Clon(),
                                                          Step is null ? null : Step.Clon());
 
-        public static int Len(object taken) => taken is string? Convert.ToString(taken).Length : ((List<object>)taken).Count;
+        public static int Len(object taken) => taken is string ? Convert.ToString(taken).Length : ((List<object>)taken).Count;
 
         public static int[] Sliced(object slice, int from, int to, object To)
         {
             int length = Len(slice);
             try
             {
+                if (to == from)
+                {
+                    if (from < 0)
+                        from = length + from;
+                    return new int[1] { from };
+                } 
+
                 if (from < 0)
                     from = length + from + 1;
                 if (To is null)
@@ -961,9 +968,13 @@ namespace VovaScript
             return common;
         }
 
-        public static List<object> Obj2List(object taken) => taken is string || taken is double || taken is long ?
-                                          Convert.ToString(taken).ToCharArray().Select(c => (object)Convert.ToString(c)).ToList() :
-                                          taken is bool ? (bool)taken ? new List<object>() { "И", "с", "т", "и", "н", "а" } : new List<object>() { "Л", "о", "ж", "ь" } : 
+        public static List<object> Obj2List(object taken) => 
+                                          taken is string || taken is double || taken is long ?
+                                              Convert.ToString(taken).ToCharArray().Select(c => (object)Convert.ToString(c)).ToList() :
+                                          taken is bool ? 
+                                              (bool)taken ? new List<object>() { "И", "с", "т", "и", "н", "а" } : new List<object>() { "Л", "о", "ж", "ь" } : 
+                                          taken is char ?
+                                              new List<object> { Convert.ToString(taken) } :
                                           (List<object>)taken;
 
         public object Evaluated()
@@ -1013,8 +1024,8 @@ namespace VovaScript
 
                 return wasList ? newArr : (object)string.Join("", newArr);
             }
-            catch (ArgumentOutOfRangeException) { throw new Exception("ОКАЗАЛСЯ ЗА ГРАНИЦАМИ ЛИСТА"); }
-            catch (IndexOutOfRangeException) { throw new Exception("ОКАЗАЛСЯ ЗА ГРАНИЦАМИ ЛИСТА"); }
+            catch (ArgumentOutOfRangeException) { throw new Exception($"ОКАЗАЛСЯ ЗА ГРАНИЦАМИ ЛИСТА, ИНДЕКСЫ: ОТ <{From}> ДО <{To}> ШАГ <{Step}>"); }
+            catch (IndexOutOfRangeException) { throw new Exception($"ОКАЗАЛСЯ ЗА ГРАНИЦАМИ ЛИСТА, ИНДЕКСЫ: ОТ <{From}> ДО <{To}> ШАГ <{Step}>"); }
         }
 
         public override string ToString() => $"{Taken}[{From}:" + To ?? "" + ":" + Step ?? "" + "]";

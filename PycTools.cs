@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -99,6 +100,22 @@ namespace VovaScript
         public VovaScriptException(string message) => Message = message;
     }
 
+    public struct FullNodeToAssign
+    {
+        public Token ObjName;
+        public object[] Parts;
+
+        public FullNodeToAssign Clone() => new FullNodeToAssign() { ObjName = ObjName.Clone(), Parts = Parts.Select(p => p is Token ? (object)(p as Token).Clone() : (object)(p as IExpression[]).Select(e => e.Clon()).ToArray()).ToArray() };
+
+        public override string ToString() => ObjName.ToString() + (Parts.Length < 1 ? "" : string.Join("", Parts.Select(p => p )));
+    }
+
+    public struct ListAndIndeces
+    {
+        public List<object> List;
+        public int[] Indeces;
+    }
+
     public struct VarAttrSliceNode
     {
         public Token ObjName;
@@ -130,6 +147,7 @@ namespace VovaScript
     {
         public List<int> AssignIndeces;
         public List<object> Value;
+        public bool WasString;
     }
 
     public static class HelpMe 
@@ -170,6 +188,111 @@ namespace VovaScript
 
         public static IndecesValue GiveMeIndecesAndValue(Token ObjName, IExpression[][] Slices, object taked)
         {
+            /*
+            if (taked is string)
+            {
+                /*
+                int[] indeces = null;
+                List<int> taken = Enumerable.Range(0, taked is List<object> ? ((List<object>)taked).Count : Convert.ToString(taked).Length).Select(e => e).ToList();
+                foreach (IExpression[] slice in Slices)
+                {
+                    taken = Enumerable.Range(0, taked is List<object> ? ((List<object>)taked).Count : Convert.ToString(taked).Length).Select(e => e).ToList();
+                    if (slice[0] is null && slice[1] is null && slice[2] is null)
+                        continue;
+                    int from = SliceExpression.DetermineIndex(slice[0]);
+
+                    if ((!(slice[1] is null) && slice[1].Evaluated() is string) || taken.Count == 1)
+                    {
+                        /*
+                         taken = GiveMeSafeInt(taken);
+                        if (taked is List<object>)
+                        {
+                            List<object> listed = taked as List<object>;
+                            taked = listed[(int)taken];
+                            wasString = taked is string;
+                            taken = Enumerable.Range(0, taked is List<object> ? ((List<object>)taked).Count : Convert.ToString(taked).Length).Select(e => e).ToList();
+                            indeces = null;
+                            continue;
+                        }
+                        else if (taked is string)
+                        {
+                        //}
+                        else
+                            taken = from;
+                        break;
+                        int len = SliceExpression.Len(taken);
+                        taken = wasString ? string.Join("", Convert.ToString(Convert.ToString(taked)[from < 0 ? len + from : from])) : ((List<object>)taked)[from < 0 ? len + from : from];
+                        continue;
+
+                        string stred = taked as string;
+                        return new IndecesValue() { AssignIndeces = taken, Value = SliceExpression.Obj2List(stred[taken[0]].ToString()), WasString = true };
+                    }
+
+                    int to = slice[1] is null ? SliceExpression.DetermineIndex(slice[1]) : slice[1].Evaluated() is string ? from : SliceExpression.DetermineIndex(slice[1]);
+                    int step = SliceExpression.DetermineIndex(slice[2], 1);
+
+                    indeces = SliceExpression.Sliced(taken.Select(t => (object)t).ToList(), from, to, slice[1]);
+                    indeces = SliceExpression.SelectStepped(indeces.ToList(), step);
+
+                    List<object> beforeStep = SliceExpression.Obj2List(taked);
+                    List<object> newArr = new List<object>();
+                    
+                    try
+                    {
+                        foreach (int index in indeces)
+                            newArr.Add(beforeStep[index]);
+                    }
+                    catch (ArgumentOutOfRangeException)
+                    {
+                        throw new Exception("ОКАЗАЛСЯ ЗА ГРАНИЦАМИ ЛИСТА");
+                    }
+                    //taken = newArr.All(b => b is string) ? (object)string.Join("", newArr) : newArr;
+                    taked = string.Join("", newArr);
+                }
+                List<int> assignIndecex = taken;
+                List<object> value = SliceExpression.Obj2List(taked);
+
+                return new IndecesValue() { AssignIndeces = assignIndecex, Value = value, WasString = true };
+                object taken = Enumerable.Range(0, taked is List<object> ? ((List<object>)taked).Count : Convert.ToString(taked).Length).Select(e => (object)e).ToList();
+                int[] indeces = null;
+                foreach (IExpression[] slice in Slices)
+                {
+                    if (slice[0] is null && slice[1] is null && slice[2] is null)
+                        continue;
+                    int from = SliceExpression.DetermineIndex(slice[0]);
+                    int to = slice[1] is null ? SliceExpression.DetermineIndex(slice[1]) : slice[1].Evaluated() is string ? from : SliceExpression.DetermineIndex(slice[1]);
+                    int step = SliceExpression.DetermineIndex(slice[2], 1);
+
+                    indeces = taken is string || taken is long || taken is double ? SliceExpression.Sliced(Convert.ToString(taken), from, to, slice[1]) :
+                            taken is List<object> ? SliceExpression.Sliced(taken, from, to, slice[1]) :
+                            throw new Exception($"<{ObjName.View}> НЕ БЫЛ ЛИСТОМ ИЛИ СТРОКОЙ, А <{taken}>");
+                    indeces = SliceExpression.SelectStepped(indeces.ToList(), step);
+
+                    List<object> beforeStep = SliceExpression.Obj2List(taken);
+                    List<object> newArr = new List<object>();
+                    // а = "0001";где а[1:][1:][-1] = 9;а; где а[1:][1:][-2:-1] = 8;а;
+                    try
+                    {
+                        foreach (int index in indeces)
+                            newArr.Add(beforeStep[index]);
+                    }
+                    catch (ArgumentOutOfRangeException)
+                    {
+                        throw new Exception("ОКАЗАЛСЯ ЗА ГРАНИЦАМИ ЛИСТА");
+                    }
+
+                    taken = newArr.All(b => b is string) ? (object)string.Join("", newArr) : newArr;
+                }
+                List<int> assignIndecex = SliceExpression.Obj2List(taken).Select(a => Convert.ToInt32(a)).ToList();
+                List<object> value = SliceExpression.Obj2List(taked);
+
+                return new IndecesValue() { AssignIndeces = assignIndecex, Value = value, WasString = true };
+            }
+            if (taked is List<object>)
+            {
+
+            }
+            throw new Exception($"ЧТО-ТО В <{ObjName.View}> НЕ БЫЛО ЛИСТОМ ИЛИ СТРОКОЙ, А <{taked}>");*/
             object taken = Enumerable.Range(0, taked is List<object> ? ((List<object>)taked).Count : Convert.ToString(taked).Length).Select(e => (object)e).ToList();
             int[] indeces = null;
             foreach (IExpression[] slice in Slices)
@@ -313,10 +436,19 @@ namespace VovaScript
                 Convert.ToInt32(x) : 
             throw new Exception($"БЫЛ НЕ ЧИСЛОМ, А <{x}>");
 
-        public static long GiveMeSafeLong(object x) =>
-            x is long || x is double ?
-                Convert.ToInt64(x) :
-            throw new Exception($"БЫЛ НЕ ЧИСЛОМ, А <{x}>");
+        public static long GiveMeSafeLong(object x) 
+        {
+            if (x is bool)
+                return (bool)x ? 1 : 0;
+            if (x is double)
+                return Convert.ToInt64(x);
+
+            string word = GiveMeSafeStr(x);
+            long res;
+            if (long.TryParse(word, out res))
+                return res;
+            throw new Exception($"ЧИСЛО <{word}> БЫЛО СЛИШКОМ ВЕЛИКО ИЛИ МАЛО ДЛЯ ПОДДЕРЖИВАЕМЫХ СЕЙЧАС ЦЕЛЫХ ЧИСЕЛ");
+        }
 
         public static double GiveMeSafeDouble(object x) => 
             x is long || x is double ? 
@@ -325,7 +457,7 @@ namespace VovaScript
                 (bool)x ? 1 : 0 : 
             throw new Exception($"БЫЛ НЕ ЧИСЛОМ, А <{x}>");
 
-        public static string GiveMeSafeStr(object x) => 
+        public static string GiveMeSafeStr(object x) =>
             x is bool ? 
                 (bool)x ? "Истина" : "Ложь" : 
             x is List<object> ? 

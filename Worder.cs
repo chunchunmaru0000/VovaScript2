@@ -278,20 +278,20 @@
                 case "тб":
                     word.Type = TokenType.TABLE;
                     return word;
-/*
-                //case "строчка":
-                //    word.Type = TokenType.STROKE;
-                //   return word;
-                //case "число":
-                //    word.Type = TokenType.NUMBER;
-                //    return word;
-                //case "точка":
-                //    word.Type = TokenType.FNUMBER;
-                //    return word;
-                //case "обманчивость":
-                //    word.Type = TokenType.BUL;
-                //    return word;
-*/
+
+                case "строчка_":
+                    word.Type = TokenType.STROKE;
+                    return word;
+                case "число_":
+                    word.Type = TokenType.NUMBER;
+                    return word;
+                case "точка_":
+                    word.Type = TokenType.FNUMBER;
+                    return word;
+                case "обманчивость_":
+                    word.Type = TokenType.BUL;
+                    return word;
+
                 case "все":
                     word.Type = TokenType.ALL;
                     return word;

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.IO;
+using System.Linq.Expressions;
 
 namespace VovaScript
 {
@@ -10,18 +11,11 @@ namespace VovaScript
     {
         public Token Variable;
         public IExpression Expression;
-        public IExpression Slot;
         public object Result;
 
         public AssignStatement(Token variable, IExpression expression) 
         { 
             Variable = variable;
-            Expression = expression;
-        }
-
-        public AssignStatement(IExpression slot, IExpression expression)
-        {
-            Slot = slot;
             Expression = expression;
         }
 
@@ -832,9 +826,9 @@ namespace VovaScript
             Fill = fill;
         }
 
-        public IStatement Clone() => new SliceAssignStatement(ObjectName.Clone(), Slices.Select(s => s.Select(i => i.Clon()).ToArray()).ToArray(), Attrs.Select(a => a.Clone()).ToArray(), Slice.Clon(), Exactly, Fill);
+        public IStatement Clone() => new SliceAssignStatement(ObjectName.Clone(), Slices is null ? null : Slices.Select(s => s.Select(i => i.Clon()).ToArray()).ToArray(), Attrs is null ? null : Attrs.Select(a => a.Clone()).ToArray(), Slice.Clon(), Exactly, Fill);
 
-        public IExpression Clon() => new SliceAssignStatement(ObjectName.Clone(), Slices.Select(s => s.Select(i => i.Clon()).ToArray()).ToArray(), Attrs.Select(a => a.Clone()).ToArray(), Slice.Clon(), Exactly, Fill);
+        public IExpression Clon() => new SliceAssignStatement(ObjectName.Clone(), Slices is null ? null : Slices.Select(s => s.Select(i => i.Clon()).ToArray()).ToArray(), Attrs is null ? null : Attrs.Select(a => a.Clone()).ToArray(), Slice.Clon(), Exactly, Fill);
 
         public void Execute()
         {
@@ -844,7 +838,14 @@ namespace VovaScript
             object got;
 
             if (Slices is null)
-                throw new Exception($"НЕВЕРНЫЙ СИНТАКСИС, ТАК КАК НЕ БЫЛИ ВВЕДЕНЫ ИНДЕКСЫ РЯДОМ С: <{ObjectName}>");
+            {
+                if (Attrs is null)
+                    new AssignStatement(ObjectName, Slice).Execute();
+                else
+                    new AttributeAssignStatement(ObjectName, Attrs, Slice).Execute();
+                return;
+            }
+
             if (Attrs is null)
             {
                 taked = Objects.GetVariable(ObjectName.View);
@@ -860,14 +861,21 @@ namespace VovaScript
             }
 
             IndecesValue resulted = HelpMe.GiveMeIndecesAndValue(ObjectName, Slices, taked);
-            List<int> assignIndecex = resulted.AssignIndeces;
-            List<object> value = resulted.Value;
+            if (resulted.WasString)
+            {
+                List<int> assignIndecex = resulted.AssignIndeces;
+                List<object> value = resulted.Value;
 
-            object ret = HelpMe.GiveMeRetOfListAndIndeces(got, assignIndecex, value, Slices, Exactly, Fill);
-            if (toSave is null)
-                Objects.AddVariable(ObjectName.View, ret);
-            else
-                toSave.AddAttribute(attrName, ret);
+                object ret = HelpMe.GiveMeRetOfListAndIndeces(got, assignIndecex, value, Slices, Exactly, Fill);
+                if (toSave is null)
+                    Objects.AddVariable(ObjectName.View, ret);
+                else
+                    toSave.AddAttribute(attrName, ret);
+                return;
+            }
+
+
+            throw new Exception($"{ObjectName.View}" + (Attrs is null ? "" : string.Join(".", Attrs.Select(a => a.View).ToArray())) + $"НЕ БЫЛ ЛИСТОМ ИЛИ СТРОКОЙ, А <{got}>");
         }
 
         public object Evaluated()
@@ -999,5 +1007,138 @@ namespace VovaScript
         public IExpression Clon() => new TryCatchStatement(TryBlock.Clone(), To is null ? null : To.Clone(), CatchBlock.Clone());
 
         public override string ToString() => "ПОПРОБОВАТЬ {" + TryBlock.ToString() + "} ПОЙМАТЬ" + (To is null ? "" : To.ToString()) + " {" + CatchBlock.ToString() + "}";
+    }
+
+    public sealed class WhereFullAssignStatement: IStatement, IExpression
+    {
+        FullNodeToAssign Node;
+        public Token Operation;
+        public IExpression Assigned;
+        bool Exactly;
+        bool Fill;
+        public object Result;
+
+        public WhereFullAssignStatement(FullNodeToAssign node, Token operation, IExpression assigned, bool exactly, bool fill)
+        {
+            Node = node;
+            Operation = operation;
+            Assigned = assigned;
+            Exactly = exactly;
+            Fill = fill;
+        }
+
+        public IExpression Clon() => new WhereFullAssignStatement(Node.Clone(), Operation.Clone(), Assigned.Clon(), Exactly, Fill);
+
+        public IStatement Clone() => new WhereFullAssignStatement(Node.Clone(), Operation.Clone(), Assigned.Clon(), Exactly, Fill);
+
+        public void Execute()
+        {
+            if (Node.Parts.Length == 0)
+            {
+                if (Operation.Type == TokenType.DO_EQUAL)
+                {
+                    Result = new AssignStatement(Node.ObjName, Assigned).Evaluated();
+                    return;
+                }
+                Token op = new Token() { Location = new Location(-1, -1) };
+                switch (Operation.Type)
+                {
+                    case TokenType.PLUSEQ:
+                        op.Type = TokenType.PLUS;
+                        op.View = "+";
+                        break;
+                    case TokenType.MINUSEQ:
+                        op.Type = TokenType.MINUS;
+                        op.View = "-";
+                        break;
+                    case TokenType.MULEQ:
+                        op.Type = TokenType.MULTIPLICATION;
+                        op.View = "*";
+                        break;
+                    case TokenType.DIVEQ:
+                        op.Type = TokenType.DIVISION;
+                        op.View = "/";
+                        break;
+                    default:
+                        break;
+                }
+                Result = new AssignStatement(Node.ObjName, new BinExpression(new VariableExpression(Node.ObjName), op, Assigned)).Evaluated();
+                return;
+            }
+
+            object root = Objects.GetVariable(Node.ObjName.View);
+            IClass parrent = null;
+            object obj = null;
+            List<object> listed = null;
+            int[] indecesToAssign = null;
+
+            if (Node.Parts[0] is Token)
+            {
+                if (root is IClass)
+                    parrent = root as IClass;
+                else 
+                    throw new Exception($"<{Node.ObjName.View}> ОЖИДАЛСЯ БЫТЬ ОБЪЕКТОМ КЛАССА, НО БЫЛ <{root}>");
+            }
+            else if (Node.Parts[0] is IExpression[] && root is List<object>)
+                listed = SliceExpression.Obj2List(root);
+
+            obj = parrent is null ? (object)listed : parrent;
+
+            foreach (object part in Node.Parts)
+            {
+                if (part is Token)
+                {
+                    if (obj is IClass)
+                        parrent = obj as IClass;
+                    else
+                        throw new Exception($"<{(part as Token).View}> ОКАЗАЛСЯ НЕ ОБЪЕКТОМ, А <{obj}>");
+                    obj = parrent.GetAttribute((part as Token).View);
+                    continue;
+                }
+                if (part is Expression[])
+                {
+                    if (obj is List<object>)
+                        listed = obj as List<object>;
+                    else
+                        throw new Exception($"<{(part as Token).View}> ОКАЗАЛСЯ НЕ ЛИСТОМ ИЛИ СТРОКОЙ, А <{obj}>");
+                    
+                    ListAndIndeces observedList = new ListAndIndeces() { };
+                    if (observedList.Indeces.Length == 0)
+                        return;
+                    if (observedList.Indeces.Length == 1)
+                    {
+                        try
+                        {
+                            obj = observedList.List[observedList.Indeces[0]];
+                        }
+                        catch
+                        {
+                            throw new Exception($"ВЫШЕЛ ЗА РАМКИ ЛИСТА <{HelpMe.GiveMeSafeStr(observedList.List)}> С ИНДЕКСОМ <{observedList.Indeces[0]}>");
+                        }
+                        continue;
+                    }
+                    obj = observedList.List;
+                    indecesToAssign = observedList.Indeces;
+                }
+            }
+            // сначала надо получить саму вещь для назначения и 
+            if (Operation.Type == TokenType.DO_EQUAL)
+            {
+
+            }
+            
+
+        }
+
+        public object Evaluated()
+        {
+            Execute();
+            return Result;
+        }
+
+        public override string ToString()
+        {
+            return base.ToString();
+        }
     }
 }

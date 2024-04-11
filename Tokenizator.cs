@@ -122,9 +122,19 @@ namespace VovaScript
                 }
                 string word = code.Substring(start, position - start).Replace('.', ',');
                 if (dots == 0)
-                    return new Token() { View = word, Value = Convert.ToInt64(word), Type = TokenType.INTEGER, Location = Loc() };
+                {
+                    long res;
+                    if (long.TryParse(word, out res))
+                        return new Token() { View = word, Value = res, Type = TokenType.INTEGER, Location = Loc() };
+                    throw new Exception($"ЧИСЛО <{word}> БЫЛО СЛИШКОМ ВЕЛИКО ИЛИ МАЛО ДЛЯ ПОДДЕРЖИВАЕМЫХ СЕЙЧАС ЧИСЕЛ");
+                }
                 if (dots == 1)
-                    return new Token() { View = word, Value = Convert.ToDouble(word), Type = TokenType.DOUBLE, Location = Loc() };
+                {
+                    double res;
+                    if (double.TryParse(word, out res))
+                        return new Token() { View = word, Value = res, Type = TokenType.DOUBLE, Location = Loc() };
+                    throw new Exception($"ЧИСЛО <{word}> БЫЛО СЛИШКОМ ВЕЛИКО ИЛИ МАЛО ДЛЯ ПОДДЕРЖИВАЕМЫХ СЕЙЧАС ЧИСЕЛ");
+                }
                 throw new Exception("МНОГА ТОЧЕК ДЛЯ ЧИСЛА");
             }
             if (PycTools.Usable(Current))

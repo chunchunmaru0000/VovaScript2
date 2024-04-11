@@ -59,6 +59,88 @@ namespace VovaScript
             return new AssignStatement(variable, new BinExpression(new VariableExpression(variable), op, expression));
         }
 
+        public static TokenType[] Equalities = new TokenType[] { TokenType.DO_EQUAL, TokenType.PLUSEQ, TokenType.MINUSEQ, TokenType.MULEQ, TokenType.DIVEQ };
+
+        public FullNodeToAssign FullNodeToAssignParse()
+        {
+            Token objName = Consume(TokenType.VARIABLE);
+            List<object> parts = new List<object>();
+
+            Token current = Current;
+            if (current.Type == TokenType.DOT || current.Type == TokenType.LCUBSCOB)
+            {
+                while (true)
+                {
+                    if (Match(TokenType.DOT))
+                    {
+                        parts.Add(Consume(TokenType.VARIABLE));
+                        continue;
+                    }
+                    if (Match(TokenType.LCUBSCOB))
+                    {
+                        IExpression[] slice = new IExpression[3] { null, null, null };
+
+                        if (Current.Type != TokenType.COLON && Current.Type != TokenType.RCUBSCOB)
+                            slice[0] = Expression();
+                        
+                        if (Match(TokenType.RCUBSCOB))
+                        {
+                            parts.Add(slice);
+                            continue;
+                        }
+
+                        if (Match(TokenType.COLON))
+                        {
+                            if (Current.Type != TokenType.COLON && Current.Type != TokenType.RCUBSCOB)
+                                slice[1] = Expression();
+                            
+                            if (Match(TokenType.RCUBSCOB))
+                            {
+                                parts.Add(slice);
+                                continue;
+                            }
+
+                            if (Match(TokenType.COLON))
+                            {
+                                if (Current.Type != TokenType.RCUBSCOB)
+                                    slice[2] = Expression();
+
+                                Consume(TokenType.RCUBSCOB);
+                                parts.Add(slice);
+                                continue;
+                            }
+                        }
+
+                        parts.Add(slice);
+                        continue;
+                    }
+                    break;
+                }
+            }
+
+            return new FullNodeToAssign() { ObjName = objName, Parts = parts.ToArray()};
+        }
+
+        public IStatement WhereFullAssign()
+        {
+            FullNodeToAssign node = FullNodeToAssignParse();
+
+            bool exactly = Match(TokenType.EXACTLY);
+            bool fill = Match(TokenType.FILL);
+
+            Token operation;
+            if (Equalities.Contains(Current.Type))
+                operation = Consume(Current.Type);
+            else
+                throw new Exception($"ОЖИДАЛСЯ ОДИН ИЗ <{string.Join(", ", Equalities.Select(e => e.GetStringValue()))}> НО БЫЛ НАЙДЕН <{Current}>");
+            
+            IExpression assigned = Expression();
+            return new WhereFullAssignStatement(node, operation, assigned, exactly, fill);
+        }
+
+        // ВЕРОЯЯТНЕЕ ВСЕГО БУДЕТ УДАЛЕНО ПОЛНОСТЬЮ
+        // ВЕРОЯЯТНЕЕ ВСЕГО БУДЕТ УДАЛЕНО ПОЛНОСТЬЮ
+        // ВЕРОЯЯТНЕЕ ВСЕГО БУДЕТ УДАЛЕНО ПОЛНОСТЬЮ
         public VarAttrSliceNode ParseFullObjNode()
         {
             Token objName = Consume(TokenType.VARIABLE);
@@ -72,14 +154,13 @@ namespace VovaScript
             List<IExpression[]> slices = null;
             if (Current.Type == TokenType.LCUBSCOB)
             {
-                slices = new List<IExpression[]>();
                 int i = -1;
                 while (true)
                 {
                     i++;
-                    slices.Add(new IExpression[3]);
                     if (Match(TokenType.LCUBSCOB))
                     {
+                        slices = new List<IExpression[]> { new IExpression[3] };
                         IExpression first;
                         if (Current.Type == TokenType.COLON)
                             first = null;
@@ -176,6 +257,9 @@ namespace VovaScript
             }
             throw new Exception($"{Near(6)}ДАННОЕ СЛОВО НЕ МОЖЕТ БЫТЬ ИСПОЛЬЗОВАННО В КАЧЕСТВЕ НАЗВАНИЯ ДЛЯ МЕТОДА ИЛИ АТТРИБУТА: {objName}.<{string.Join(".", attrs)}>");
         }
+        // ВЕРОЯЯТНЕЕ ВСЕГО БУДЕТ УДАЛЕНО ПОЛНОСТЬЮ
+        // ВЕРОЯЯТНЕЕ ВСЕГО БУДЕТ УДАЛЕНО ПОЛНОСТЬЮ
+        // ВЕРОЯЯТНЕЕ ВСЕГО БУДЕТ УДАЛЕНО ПОЛНОСТЬЮ
 
         private IStatement Printy()
         {

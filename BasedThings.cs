@@ -370,7 +370,9 @@ namespace VovaScript
         public static IClass Min = new IClass("минимум", new Dictionary<string, object>(), new Min());
         public static IClass Square = new IClass("корень", new Dictionary<string, object>(), new Square());
         public static IClass Randomed = new IClass("случайный", new Dictionary<string, object>(), new RandomFunction());
-        
+        public static IClass Bin = new IClass("двоичным", new Dictionary<string, object>(), new BinFunction());
+        public static IClass BinPlus = new IClass("двоич_плюс", new Dictionary<string, object>(), new BinPlusFunction());
+
         // io
         public static IClass ReadAllFile = new IClass("вычитать", new Dictionary<string, object>(), new ReadAllFileFunction());
         public static IClass WritingFile = new IClass("писать", new Dictionary<string, object>(), new WritingFileFunction());
@@ -426,6 +428,7 @@ namespace VovaScript
             { "макс", long.MaxValue },
             { "владеет", new IClass("_владеет", new Dictionary<string, object>(), Dir.Cloned()) },
             { "дир", new IClass("_владеет", new Dictionary<string, object>(), Dir.Cloned()) },
+            { "двоичным", new IClass("_двоичным", new Dictionary<string, object>(), Bin.Cloned()) },
         });
 
         public static IClass IFloat = new IClass("ЯТочка", new Dictionary<string, object>
@@ -598,6 +601,8 @@ namespace VovaScript
             { "обрез_прав", TrimEnd },
             { "суммой", Sum },
             { "счет", Count },
+            { "двоичным", Bin },
+            { "двоич_плюс", BinPlus },
 
             { "вычитать",  ReadAllFile },
             { "писать",  WritingFile.Clone() },
