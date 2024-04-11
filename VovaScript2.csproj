@@ -60,9 +60,23 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
+    <None Include="all tests\Codewars\4 kyu Codewars style ranking system.pyclan" />
+    <None Include="all tests\Codewars\5 kyu Extract the domain name from a URL.pyclan" />
+    <None Include="all tests\Codewars\5 kyu PaginationHelper.pyclan" />
+    <None Include="all tests\Codewars\6 kyu +1 Array.pyclan" />
+    <None Include="all tests\Codewars\6 kyu Break camelCase.pyclan" />
+    <None Include="all tests\Codewars\6 kyu Data Reverse.pyclan" />
+    <None Include="all tests\Codewars\6 kyu Game Hit the target - 2nd part.pyclan" />
+    <None Include="all tests\Codewars\6 kyu Length of missing array.pyclan" />
+    <None Include="all tests\Codewars\6 kyu Make the Deadfish Swim.pyclan" />
+    <None Include="all tests\тесты задачек\Fomin 04 03 2024.pyclan" />
+    <None Include="all tests\тесты задачек\Fomin 04 09 2024.pyclan" />
+    <None Include="all tests\тесты задачек\Ivanov 04 09 2024.pyclan" />
+    <None Include="all tests\тесты задачек\Pezei 04 11 2024.pyclan" />
     <None Include="packages.config" />
     <None Include="about\SYSNTAX.md" />
     <None Include="README.md" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -78,7 +78,7 @@ namespace VovaScript
             }
             else if (value is string)
             {
-                Console.WriteLine('"' + Convert.ToString(value) + '"');
+                Console.WriteLine(Convert.ToString(value));
                 Result = value;
             }
             else

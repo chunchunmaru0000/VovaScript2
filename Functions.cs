@@ -1054,15 +1054,23 @@ namespace VovaScript
                     if (f is long)
                         if (Convert.ToInt64(f) == Convert.ToInt64(s))
                             continue;
+                        else
+                            return false;
                     if (f is double)
                         if (Convert.ToDouble(f) == Convert.ToDouble(s))
                             continue;
+                        else
+                            return false;
                     if (f is bool)
                         if (Convert.ToBoolean(f) == Convert.ToBoolean(s))
                             continue;
+                        else
+                            return false;
                     if (f is string)
                         if (Convert.ToString(f) == Convert.ToString(s))
                             continue;
+                        else
+                            return false;
                     throw new Exception($"ЧТО ЗА ТИП ТАКОЙ ЭЭЭ <{f.GetType()}> У <{f}> И <{s}>");
                 }
                 return false;
