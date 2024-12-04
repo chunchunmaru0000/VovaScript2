@@ -45,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BasedThings.cs" />
+    <Compile Include="Compiler.cs" />
     <Compile Include="Expressions.cs" />
     <Compile Include="ExpressionsParse.cs" />
     <Compile Include="Functions.cs" />

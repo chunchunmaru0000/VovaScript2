@@ -1152,7 +1152,7 @@ namespace VovaScript
                     indecesToAssign = observedList.Indeces;
                 }
             }
-            // сначала надо получить саму вещь для назначения и потоам еще и всякие = += -=
+            // сначала надо получить саму вещь для назначения и потом еще и всякие = += -=
             // obj который либо объект и имеет parrent 
             // либо лист и имеет индексы
             if (Operation.Type == TokenType.DO_EQUAL)
@@ -1169,8 +1169,8 @@ namespace VovaScript
                     parrent.AddAttribute(attrName, wasString ? string.Join("", obj as List<object>) : obj);
                     return;
                // }
-                Console.WriteLine(obj);
-                throw new Exception("ЭТО НЕ ДОЛЖНО ТАК БЫТЬ");
+                //Console.WriteLine(obj);
+                //throw new Exception("ЭТО НЕ ДОЛЖНО ТАК БЫТЬ");
             }
             else
             {

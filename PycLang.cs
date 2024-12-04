@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -10,7 +11,7 @@ namespace VovaScript
         public static bool Tokens = false;                  //
         public static bool PrintVariablesInDebug = false;   //
         public static bool PrintVariablesAfterDebug = false;//
-        public static bool PrintProgram = false;            //
+        public static bool PrintProgram = true;            //
         public static bool Debug = true;                   
         public static bool Crash = false;
         public static bool TimePrint = true;
@@ -92,6 +93,21 @@ namespace VovaScript
 			if (TimePrint) Console.WriteLine(stopwatch.Elapsed);
 		}
 
+        public static void Interpret(string code, string dir) => PycOnceLoad(code, dir);
+
+        public static void Compile(string code, string dir)
+        {
+			Directory = dir;
+            IStatement program = new NothingStatement();
+			try 
+            { 
+			    program = new Parser(new Tokenizator(code).Tokenize()).Parse();
+                new Compiler(program).Compile();
+
+                Console.WriteLine("УСПЕШНО СКОМПИЛИРОВАНО");
+            } 
+            catch (Exception e) { PrintError(e); }
+		}
 
 		public static void Pyc()
         {

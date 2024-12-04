@@ -608,7 +608,9 @@ namespace VovaScript
                     return $"{Name} ИМЕЕТ ЗНАЧЕНИЕ {PrintStatement.ListString((List<object>)value)}";
                 return Convert.ToString(value);
             }
-            throw new Exception("ДАННОЙ ПЕРЕМЕННОЙ ПОКА НЕТУ ????? ЭТО ОШИБКА В ВЫРАЖЕНИИ ПЕРЕМЕННОЙ");
+            // Я НЕ ЗНАЮ ПОЧЕМУ ТУТ СТОЯЛ ВЫЛЕТ, МОЖЕТ ЭТО БУДЕТ ПРИЧИНЯТЬ НЕКОТОРУЮ ОШИБКУ, НО БЕЗ ЭТОГО НЕ РАБОТАЕТ PrintProgram
+            return Name.View;
+			throw new Exception("ДАННОЙ ПЕРЕМЕННОЙ ПОКА НЕТУ ????? ЭТО ОШИБКА В ВЫРАЖЕНИИ ПЕРЕМЕННОЙ");
           //  return $"{Objects.NOTHING} ИМЕЕТ ЗНАЧЕНИЕ {Objects.NOTHING}";
         }
     }
