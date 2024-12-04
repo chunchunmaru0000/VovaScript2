@@ -85,6 +85,7 @@ namespace VovaScript
                         
                         if (Match(TokenType.RCUBSCOB))
                         {
+                            slice[1] = new NumExpression("");
                             parts.Add(slice);
                             continue;
                         }
@@ -154,13 +155,14 @@ namespace VovaScript
             List<IExpression[]> slices = null;
             if (Current.Type == TokenType.LCUBSCOB)
             {
+                slices = new List<IExpression[]>();
                 int i = -1;
                 while (true)
                 {
                     i++;
+                    slices.Add(new IExpression[3]);
                     if (Match(TokenType.LCUBSCOB))
                     {
-                        slices = new List<IExpression[]> { new IExpression[3] };
                         IExpression first;
                         if (Current.Type == TokenType.COLON)
                             first = null;
@@ -209,7 +211,7 @@ namespace VovaScript
                     break;
                 }
             }
-            return new VarAttrSliceNode() { ObjName = objName, Attrs = attrs is null ? null : attrs.ToArray(), Slices = slices is null ? null : slices.ToArray() }; 
+            return new VarAttrSliceNode() { ObjName = objName, Attrs = attrs is null ? null : attrs.ToArray(), Slices = slices is null ? null : slices.ToArray() };
         }
 
         private IStatement ItemAssigny()

@@ -248,6 +248,12 @@ namespace VovaScript
                     result = new SliceExpression(result, first, new NumExpression(""));
                     continue;
                 }
+
+                if (Match(TokenType.IN))
+                {
+                    result = new InExpression(result, Expression());
+                    continue;
+                }
                 break;
             }
             return result;

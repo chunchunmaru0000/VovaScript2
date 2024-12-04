@@ -155,6 +155,7 @@ namespace VovaScript
                 return AttMethody();
 
             if (Match(TokenType.WHERE))
+                //return WhereFullAssign();
                 return ItemAssigny();
 
             if (current.Type == TokenType.PLUSPLUS || current.Type == TokenType.MINUSMINUS && next.Type == TokenType.VARIABLE)

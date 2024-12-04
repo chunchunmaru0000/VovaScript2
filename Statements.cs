@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.IO;
-using System.Linq.Expressions;
 
 namespace VovaScript
 {
@@ -861,7 +860,20 @@ namespace VovaScript
             }
 
             IndecesValue resulted = HelpMe.GiveMeIndecesAndValue(ObjectName, Slices, taked);
-            if (resulted.WasString)
+			List<int> assignIndecex = resulted.AssignIndeces;
+			List<object> value = resulted.Value;
+
+			object ret = HelpMe.GiveMeRetOfListAndIndeces(got, assignIndecex, value, Slices, Exactly, Fill);
+			if (toSave is null)
+				Objects.AddVariable(ObjectName.View, ret);
+			else
+				toSave.AddAttribute(attrName, ret);
+            // 
+            //  Я ВРОДЕ КАК ХОТЕЛ СДЕЛАТЬ ВОЗМОЖНЫМ ТИПА А[1] += 1, И ДЛЯ ЭТОГО НУДНО БЫЛО ОТСЛЕЖИВАТЬ ПОЛОЖЕНИЕ САМОГО МАССИВА
+            //  ТО ЕСТЬ ССЫЛКУ НА НЕГО И САМО ЕГО ЗНАЧЕНИЕ И ДЕЛАТЬ НО Я УЖЕ НЕ ПОМНЮ И ВООБЩЕ МОЖЕТ ПОТОМ КАК-ТО СДЕЛАЮ    
+            //
+            /*
+			if (resulted.WasString)
             {
                 List<int> assignIndecex = resulted.AssignIndeces;
                 List<object> value = resulted.Value;
@@ -873,9 +885,13 @@ namespace VovaScript
                     toSave.AddAttribute(attrName, ret);
                 return;
             }
+            else
+            {
 
+            }
 
             throw new Exception($"{ObjectName.View}" + (Attrs is null ? "" : string.Join(".", Attrs.Select(a => a.View).ToArray())) + $"НЕ БЫЛ ЛИСТОМ ИЛИ СТРОКОЙ, А <{got}>");
+             */
         }
 
         public object Evaluated()
@@ -1011,11 +1027,11 @@ namespace VovaScript
 
     public sealed class WhereFullAssignStatement: IStatement, IExpression
     {
-        FullNodeToAssign Node;
+        public FullNodeToAssign Node;
         public Token Operation;
         public IExpression Assigned;
-        bool Exactly;
-        bool Fill;
+        public bool Exactly;
+        public bool Fill;
         public object Result;
 
         public WhereFullAssignStatement(FullNodeToAssign node, Token operation, IExpression assigned, bool exactly, bool fill)
@@ -1066,8 +1082,10 @@ namespace VovaScript
                 return;
             }
 
+            Result = Assigned.Evaluated();
             object root = Objects.GetVariable(Node.ObjName.View);
             IClass parrent = null;
+            string attrName = "";
             object obj = null;
             List<object> listed = null;
             int[] indecesToAssign = null;
@@ -1076,11 +1094,13 @@ namespace VovaScript
             {
                 if (root is IClass)
                     parrent = root as IClass;
-                else 
+                else
                     throw new Exception($"<{Node.ObjName.View}> ОЖИДАЛСЯ БЫТЬ ОБЪЕКТОМ КЛАССА, НО БЫЛ <{root}>");
             }
-            else if (Node.Parts[0] is IExpression[] && root is List<object>)
+            else if (root is List<object> || root is string)
                 listed = SliceExpression.Obj2List(root);
+            else
+                throw new Exception($"<{Node.ObjName.View}> ОЖИДАЛСЯ БЫТЬ ОБЪЕКТОМ ЛИСТОМ ИЛИ СТРОКОЙ, НО БЫЛ <{root}>");
 
             obj = parrent is null ? (object)listed : parrent;
 
@@ -1091,43 +1111,72 @@ namespace VovaScript
                     if (obj is IClass)
                         parrent = obj as IClass;
                     else
-                        throw new Exception($"<{(part as Token).View}> ОКАЗАЛСЯ НЕ ОБЪЕКТОМ, А <{obj}>");
-                    obj = parrent.GetAttribute((part as Token).View);
+                        throw new Exception($"<{obj}> ОКАЗАЛСЯ НЕ ОБЪЕКТОМ, А <{obj}> ПРИ ПОПЫТКИ ВЗЯТЬ ИЗ НЕГО <{(part as Token).View}>");
+                    attrName = (part as Token).View;
+                    obj = parrent.GetAttribute(attrName);
                     continue;
                 }
-                if (part is Expression[])
+                if (part is IExpression[])
                 {
+                    bool wasString = obj is string;
                     if (obj is List<object>)
                         listed = obj as List<object>;
+                    else if (wasString)
+                        listed = SliceExpression.Obj2List(obj);
                     else
                         throw new Exception($"<{(part as Token).View}> ОКАЗАЛСЯ НЕ ЛИСТОМ ИЛИ СТРОКОЙ, А <{obj}>");
-                    
-                    ListAndIndeces observedList = new ListAndIndeces() { };
+
+                    ListAndIndeces observedList = HelpMe.GiveMeListAndIndeces(obj, indecesToAssign, part as IExpression[]);
                     if (observedList.Indeces.Length == 0)
                         return;
+
+                    //parrent = null;
                     if (observedList.Indeces.Length == 1)
                     {
                         try
                         {
-                            obj = observedList.List[observedList.Indeces[0]];
+                            if (wasString)
+                                obj = HelpMe.GiveMeSafeStr(observedList.List[observedList.Indeces[0]]);
+                            else
+                                obj = observedList.List[observedList.Indeces[0]];
                         }
                         catch
                         {
                             throw new Exception($"ВЫШЕЛ ЗА РАМКИ ЛИСТА <{HelpMe.GiveMeSafeStr(observedList.List)}> С ИНДЕКСОМ <{observedList.Indeces[0]}>");
                         }
+                        indecesToAssign = observedList.Indeces;
                         continue;
                     }
-                    obj = observedList.List;
+
+                    obj = wasString ? (object)string.Join("", observedList.List) : observedList.List;
                     indecesToAssign = observedList.Indeces;
                 }
             }
-            // сначала надо получить саму вещь для назначения и 
+            // сначала надо получить саму вещь для назначения и потоам еще и всякие = += -=
+            // obj который либо объект и имеет parrent 
+            // либо лист и имеет индексы
             if (Operation.Type == TokenType.DO_EQUAL)
             {
-
+                if (obj is IClass)
+                {
+                    (obj as IClass).AddAttribute(attrName, Assigned.Evaluated());
+                    return;
+                }
+                //if (obj is List<object> || obj is string)
+                //{
+                    bool wasString = obj is string;
+                    obj = HelpMe.GiveMeRetOfListAndIndeces(Assigned.Evaluated(), indecesToAssign.ToList(), SliceExpression.Obj2List(obj), null, Exactly, Fill);
+                    parrent.AddAttribute(attrName, wasString ? string.Join("", obj as List<object>) : obj);
+                    return;
+               // }
+                Console.WriteLine(obj);
+                throw new Exception("ЭТО НЕ ДОЛЖНО ТАК БЫТЬ");
             }
-            
-
+            else
+            {
+                throw new Exception("面倒");
+                // параша с += -= *= /=
+            }
         }
 
         public object Evaluated()

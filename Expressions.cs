@@ -939,7 +939,7 @@ namespace VovaScript
             }
             catch (Exception)
             {
-                throw new Exception($"НЕКОРРЕКТНЫЕ ИНДЕКСЫ: ОТ <{from}> ДО <{to}> С ДЛИНОЙ <{to - from}> КОГДА У ОБЪЕКТА <" + (slice is List<object> ? PrintStatement.ListString((List<object>)slice) : slice) + $"> ДЛИНА <{length}>");
+                throw new Exception($"НЕКОРРЕКТНЫЕ ИНДЕКСЫ: ОТ <{from}> ДО <{to}> С ДЛИНОЙ <{to - from}> КОГДА У ОБЪЕКТА <{HelpMe.GiveMeSafeStr(slice)}> ДЛИНА <{length}>");
             }
         }
 
@@ -1102,6 +1102,24 @@ namespace VovaScript
         }
 
         public override string ToString() => $"ОТ {From} ДО {Till}";
+    }
+
+    public sealed class InExpression : IExpression
+    {
+        public IExpression Value;
+        public IExpression List;
+
+        public InExpression(IExpression value, IExpression list)
+        {
+            Value = value;
+            List = list;
+        }
+
+        public object Evaluated() => new ContainsFunction().Execute(new object[] { List.Evaluated(), Value.Evaluated() });
+
+        public IExpression Clon() => new InExpression(Value.Clon(), List.Clon());
+
+        public override string ToString() => $"{Value} В {List}";
     }
 
   //  public sealed class FullNodeExpression : IExpression

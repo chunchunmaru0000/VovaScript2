@@ -67,7 +67,7 @@ namespace VovaScript
         public static void PycOnceLoad(string code, string dir)
         {
             Directory = dir;
-            try {
+           // try {
                 Stopwatch stopwatch = new Stopwatch();
                 stopwatch.Start();
 
@@ -80,7 +80,7 @@ namespace VovaScript
 
                 stopwatch.Stop();
                 if (TimePrint) Console.WriteLine(stopwatch.Elapsed);
-            } catch (Exception e) { PrintError(e); } 
+          //  } catch (Exception e) { PrintError(e); } 
           
             PrintVariables(PrintVariablesAfterDebug);
         }

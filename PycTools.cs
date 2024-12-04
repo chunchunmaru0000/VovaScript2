@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 
 namespace VovaScript
@@ -346,7 +347,7 @@ namespace VovaScript
             }
             else
             {
-                if (!Fill && Slices.All(s => s[2] is null))
+                if (!Fill)// && Slices.All(s => s[2] is null))
                 {
                     if (toAssign.Count == assignIndecex.Count)
                         for (int i = 0; i < assignIndecex.Count; i++)
@@ -431,10 +432,74 @@ namespace VovaScript
             throw new Exception("ФВАПЫАПРШОЩЖВАПЫОЫВАРАПРВАПРВПАРВПРОВПРОШЩЖВААПРТОЛДЮАПРВАПРЛДЬЖЖВАПРФВОЩЗАПОЫПВАПОЫ");
         }
 
-        public static int GiveMeSafeInt(object x) => 
-            x is long || x is double ? 
-                Convert.ToInt32(x) : 
+        public static ListAndIndeces GiveMeListAndIndeces(object obj, int[] indecesToAssign, IExpression[] part)
+        {
+            List<object> listed = SliceExpression.Obj2List(obj);
+            int len = SliceExpression.Len(listed);
+            int[] newIndeces; 
+            int from = part[0] is null ? 0 : GiveMeSafeInt(part[0].Evaluated());
+            int to;
+            if (part[1] is null)
+                to = len;
+            else
+            {
+                object parted = part[1].Evaluated();
+                to = parted is string ? from : GiveMeSafeInt(parted);
+            }
+            int step = part[2] is null ? 1 : GiveMeSafeInt(part[2].Evaluated());
+            if (from < 0)
+                from = len + from + 1;
+
+            string message(int[] ind) =>
+                $"ОКАЗАЛСЯ ЗА ГРАНИЦАМИ ЛИСТА, ИНДЕКСЫ: ОТ <{from}> ДО <{to}> ШАГ <{step}>\n" +
+                $"ДАННЫМ ЗНАЧЕНИЕМ БЫЛО <{GiveMeSafeStr(listed)}>\n" +
+                $"ПРИ ПОПЫТКЕ ЗВЯТЬ ИЗ ИНДЕКСОВ <{GiveMeSafeStr(indecesToAssign)}> ИНДЕКСЫ В МЕСТАХ <{ind}>";
+
+            try
+            {
+                if (to != from)
+                {
+                    if (to < 0)
+                        to = len + to;
+                    newIndeces = Enumerable.Range(from, to - from).ToArray();
+                }
+                else
+                    newIndeces = new int[1] { from };
+            }
+            catch (ArgumentOutOfRangeException) { throw new Exception(message(null)); }
+            catch (IndexOutOfRangeException)    { throw new Exception(message(null)); }
+
+            newIndeces = SliceExpression.SelectStepped(newIndeces.ToList(), step);
+
+            if (indecesToAssign is null)
+                return new ListAndIndeces() { Indeces = newIndeces, List = listed };
+
+            List<int> newArr = new List<int>();
+            try
+            {
+                foreach (int index in newIndeces)
+                    newArr.Add(indecesToAssign[index]);
+            }
+            catch (ArgumentOutOfRangeException) { throw new Exception(message(newIndeces)); }
+            catch (IndexOutOfRangeException)    { throw new Exception(message(newIndeces)); }
+
+            return new ListAndIndeces() { Indeces = newArr.ToArray(), List = listed };
+        }
+
+        public static int GiveMeSafeInt(object x)
+        {
+            if (x is int)
+                return Convert.ToInt32(x);
+            if (x is long || x is double)
+            {
+                int res;
+                if (int.TryParse(GiveMeSafeStr(x), out res))
+                    return res;
+                else
+                    throw new Exception($"ЗНАЧЕНИЕ <{x}> ВЫЛО СЛИШКОМ ВЕЛИКО ДЛЯ ДАННОГО УПОТРЕБЛЕНИЯ В КАЧЕСТВЕ ЧИСЛА(ВЕРОЯТНО В КАЧЕСТВЕ ИНДЕКСА)");
+            }
             throw new Exception($"БЫЛ НЕ ЧИСЛОМ, А <{x}>");
+        }
 
         public static long GiveMeSafeLong(object x) 
         {
