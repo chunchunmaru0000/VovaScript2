@@ -7,9 +7,14 @@ namespace VovaScript
 {
 	public class Compiler
 	{
-		IStatement program;
+		IStatement Program;
+		string OutFileName;
 
-		public Compiler(IStatement program) => this.program = program;
+		public Compiler(IStatement program, string filename)
+		{
+			Program = program;
+			OutFileName = filename;
+		}
 
 		public void Compile()
 		{

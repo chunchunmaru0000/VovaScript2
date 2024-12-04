@@ -11,7 +11,7 @@ namespace VovaScript
         public static bool Tokens = false;                  //
         public static bool PrintVariablesInDebug = false;   //
         public static bool PrintVariablesAfterDebug = false;//
-        public static bool PrintProgram = true;            //
+        public static bool PrintProgram = false;            //
         public static bool Debug = true;                   
         public static bool Crash = false;
         public static bool TimePrint = true;
@@ -98,13 +98,14 @@ namespace VovaScript
         public static void Compile(string code, string dir)
         {
 			Directory = dir;
-            IStatement program = new NothingStatement();
 			try 
-            { 
-			    program = new Parser(new Tokenizator(code).Tokenize()).Parse();
-                new Compiler(program).Compile();
+            {
+                string filename = string.Join("\\", dir.Split('\\').Take(dir.Split('\\').Length - 1)) + '\\' + dir.Split('\\').Last() + ".b";
+
+                new Compiler(new Parser(new Tokenizator(code).Tokenize()).Parse(), filename).Compile();
 
                 Console.WriteLine("УСПЕШНО СКОМПИЛИРОВАНО");
+                Console.WriteLine(filename);
             } 
             catch (Exception e) { PrintError(e); }
 		}
