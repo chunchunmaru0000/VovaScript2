@@ -189,10 +189,11 @@ namespace VovaScript
 
         public static IndecesValue GiveMeIndecesAndValue(Token ObjName, IExpression[][] Slices, object taked)
         {
-            /*
+                /*
+            
             if (taked is string)
             {
-                /*
+                
                 int[] indeces = null;
                 List<int> taken = Enumerable.Range(0, taked is List<object> ? ((List<object>)taked).Count : Convert.ToString(taked).Length).Select(e => e).ToList();
                 foreach (IExpression[] slice in Slices)
@@ -204,8 +205,8 @@ namespace VovaScript
 
                     if ((!(slice[1] is null) && slice[1].Evaluated() is string) || taken.Count == 1)
                     {
-                        /*
-                         taken = GiveMeSafeInt(taken);
+
+                        taken = GiveMeSafeInt(taken);
                         if (taked is List<object>)
                         {
                             List<object> listed = taked as List<object>;
@@ -217,9 +218,9 @@ namespace VovaScript
                         }
                         else if (taked is string)
                         {
-                        //}
+                        }
                         else
-                            taken = from;
+                            taken = new List<int>() { from };
                         break;
                         int len = SliceExpression.Len(taken);
                         taken = wasString ? string.Join("", Convert.ToString(Convert.ToString(taked)[from < 0 ? len + from : from])) : ((List<object>)taked)[from < 0 ? len + from : from];
@@ -293,7 +294,8 @@ namespace VovaScript
             {
 
             }
-            throw new Exception($"ЧТО-ТО В <{ObjName.View}> НЕ БЫЛО ЛИСТОМ ИЛИ СТРОКОЙ, А <{taked}>");*/
+            throw new Exception($"ЧТО-ТО В <{ObjName.View}> НЕ БЫЛО ЛИСТОМ ИЛИ СТРОКОЙ, А <{taked}>");
+            */
             object taken = Enumerable.Range(0, taked is List<object> ? ((List<object>)taked).Count : Convert.ToString(taked).Length).Select(e => (object)e).ToList();
             int[] indeces = null;
             foreach (IExpression[] slice in Slices)
@@ -312,7 +314,12 @@ namespace VovaScript
                 List<object> beforeStep = SliceExpression.Obj2List(taken);
                 List<object> newArr = new List<object>();
 
-                try
+                //
+                //
+                // ТУТ КОРОЧЕ  Я НЕ ЗНАЮ НЕ РАБОТАЕТ ВООБЩЕ С МНОГОМЕРНЫМИ МАССИВАМИ
+                //
+                //
+				try
                 {
                     foreach (int index in indeces)
                         newArr.Add(beforeStep[index]);

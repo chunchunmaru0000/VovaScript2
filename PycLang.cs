@@ -7,11 +7,12 @@ namespace VovaScript
 {
     public static class VovaScript2
     {
-        public static bool Tokens = false;
+        public static bool Tokens = false;                  //
         public static bool PrintVariablesInDebug = false;   //
         public static bool PrintVariablesAfterDebug = false;//
         public static bool PrintProgram = false;            //
-        public static bool Debug = false;                   //
+        public static bool Debug = true;                   
+        public static bool Crash = false;
         public static bool TimePrint = true;
         public static string Directory = "";
 
@@ -67,25 +68,32 @@ namespace VovaScript
         public static void PycOnceLoad(string code, string dir)
         {
             Directory = dir;
-           // try {
-                Stopwatch stopwatch = new Stopwatch();
-                stopwatch.Start();
+            if (Crash)
+                DoPycOnceLoad(code);
+            else
+		        try { DoPycOnceLoad(code); } catch (Exception e) { PrintError(e); } 
 
-                var tokens = new Tokenizator(code).Tokenize();
-                if (Tokens) LogTokens(ref tokens);
-
-                IStatement program = new Parser(tokens).Parse();
-                if (PrintProgram) Console.WriteLine(program);
-                program.Execute();
-
-                stopwatch.Stop();
-                if (TimePrint) Console.WriteLine(stopwatch.Elapsed);
-          //  } catch (Exception e) { PrintError(e); } 
-          
-            PrintVariables(PrintVariablesAfterDebug);
+			PrintVariables(PrintVariablesAfterDebug);
         }
 
-        public static void Pyc()
+		public static void DoPycOnceLoad(string code)
+        {
+			Stopwatch stopwatch = new Stopwatch();
+			stopwatch.Start();
+
+			var tokens = new Tokenizator(code).Tokenize();
+			if (Tokens) LogTokens(ref tokens);
+
+			IStatement program = new Parser(tokens).Parse();
+			if (PrintProgram) Console.WriteLine(program);
+			program.Execute();
+
+			stopwatch.Stop();
+			if (TimePrint) Console.WriteLine(stopwatch.Elapsed);
+		}
+
+
+		public static void Pyc()
         {
             while (true)
             {
